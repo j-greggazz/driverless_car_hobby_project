@@ -14,24 +14,20 @@ class LineDetector {
 
 public:
 
-
-
-	// Constructor
+	// Constructor / Destructor
 	LineDetector();
-
 	~LineDetector();
-
 
 	struct EdgeConfig {
 
-		// Window names
+		// Window Properties
 		const std::string blurThreshWindowName = "1. Blur & Thresholding";
 		const std::string edgeWindowName = "1. Canny Edge Detection";
 		const std::string morphWindowName = "2. Morphological Operations 1";
 		const std::string morphWindowName2 = "3. Morphological Operations 2";
 		const std::string houghWindowName = "4. Hough Operations";
-		const int screenLength = 1650;
-		const int screenWidth = 1080;
+		const int screenHeight = 1080;
+		const int screenWidth = 1650;
 
 		// Edge Detection Operations
 		int lowThresh = 20;
@@ -40,8 +36,6 @@ public:
 		cv::Mat origImg;
 		cv::Mat cannyImg;
 		cv::Mat blurThreshImg;
-		cv::Mat morphImg;
-		cv::Mat morphImg2;
 
 		// Blur Parameters
 		int gauss_ksize = 0;
@@ -55,12 +49,11 @@ public:
 		int morphTransformType = 0;
 		int morphTransformType_ = 0;
 		int	kernel_morph_size_ = 0;
+		cv::Mat morphImg;
+		cv::Mat morphImg2;
 
 		// Hough transforms
-
 		int houghThreshold = 300;
-		//int lowCannyThresh = 20;
-		//int highCannyThresh = 150;
 		int apertureSize = 1;
 		int minVotes = 55;
 		int minVotesLim = 200;
@@ -68,32 +61,13 @@ public:
 		int minLineLength = 0;
 		int maxLineGap = 35;
 		int maxLineGapLimit = 500;
-		//std::string houghWindowName = "4. Hough transforms";
 		int lineThickness = 2;
 		std::vector<cv::Vec4i> edgeLines;
-
+		cv::Mat houghImg;
 
 	};
-
-	struct HoughConfig {
-
-		// Hough Transformation Parameters
-		int houghThreshold = 300;
-		int lowCannyThresh = 20;
-		int highCannyThresh = 150;
-		int apertureSize = 1;
-		int minVotes = 55;
-		int minVotesLim = 200;
-		int minLineLengthLimit = 500;
-		int minLineLength = 0;
-		int maxLineGap = 35;
-		int maxLineGapLimit = 500;
-		std::string houghWindowName = "4. Hough transforms";
-	};
-
 
 	struct ConfigParams {
-		HoughConfig houghParams;
 		EdgeConfig edgeParams;
 	};
 
@@ -115,13 +89,13 @@ public:
 	static void morphCallback2(int, void *userdata);
 
 	// -- Hough transforms
-
 	void houghParametersP();
 	static void houghPCallback(int, void *userdata);
 
 
-	//  -- Test functions
-	static void displayImg(cv::Mat Img, const std::string title, std::string position, int screenLength, int screenwidth, int numImgs);
+	//  -- Helper functions
+	static void displayImg(cv::Mat Img, const std::string title, int screenLength, int screenwidth, int numImgs);
+	static void drawLines(cv::Mat& Img);
 	static void PrintFullPath(char * partialPath);
 	static void func();
 };

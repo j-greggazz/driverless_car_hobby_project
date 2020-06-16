@@ -19,13 +19,13 @@ void LineDetector::houghParametersP() {
 	namedWindow(this->configParams.edgeParams.houghWindowName, WINDOW_AUTOSIZE);
 
 	//imshow(title, Img); // Show our image inside it.  // 
-	moveWindow(this->configParams.edgeParams.houghWindowName, int(this->configParams.edgeParams.screenLength / 2), int(this->configParams.edgeParams.screenWidth / 2));
-	resizeWindow(this->configParams.edgeParams.houghWindowName, int(this->configParams.edgeParams.screenLength / 2), int(this->configParams.edgeParams.screenWidth / 2));
+	moveWindow(this->configParams.edgeParams.houghWindowName, int(this->configParams.edgeParams.screenWidth / 2), int(this->configParams.edgeParams.screenHeight / 2));
+	resizeWindow(this->configParams.edgeParams.houghWindowName, int(this->configParams.edgeParams.screenWidth / 2), int(this->configParams.edgeParams.screenHeight / 2));
 
 	//create memory to store trackbar name on window
 	createTrackbar("minVotes", this->configParams.edgeParams.houghWindowName, &this->configParams.edgeParams.minVotes, this->configParams.edgeParams.minVotesLim, houghPCallback, &this->configParams.edgeParams);
-	createTrackbar("minLineLength", this->configParams.edgeParams.houghWindowName, &this->configParams.edgeParams.minLineLength, this->configParams.edgeParams.minLineLengthLimit, houghPCallback, &this->configParams.edgeParams);
-	createTrackbar("maxGapLength", this->configParams.edgeParams.houghWindowName, &this->configParams.edgeParams.maxLineGap, this->configParams.edgeParams.maxLineGapLimit, houghPCallback, &this->configParams.edgeParams);
+	createTrackbar("minLength", this->configParams.edgeParams.houghWindowName, &this->configParams.edgeParams.minLineLength, this->configParams.edgeParams.minLineLengthLimit, houghPCallback, &this->configParams.edgeParams);
+	createTrackbar("maxGap", this->configParams.edgeParams.houghWindowName, &this->configParams.edgeParams.maxLineGap, this->configParams.edgeParams.maxLineGapLimit, houghPCallback, &this->configParams.edgeParams);
 	//createTrackbar("cannyLow", params.windowName, &params.lowCannyThreshold, 255, LineDetector::houghPCallback, &params);
 	//createTrackbar("cannyHigh", params.windowName, &params.highCannyThreshold, 255, LineDetector::houghPCallback, &params);
 	//createTrackbar("kernelSize", params.windowName, &params.apertureSize, 21, LineDetector::houghPCallback, &params);
@@ -38,21 +38,11 @@ void LineDetector::houghParametersP() {
 void LineDetector::houghPCallback(int, void *userdata) {
 	
 	EdgeConfig *edgeConfig = reinterpret_cast<EdgeConfig *>(userdata);
-
 	Mat houghImg = edgeConfig->morphImg2.clone();
-
 	vector<Vec4i> lines;
-	//cv::Mat cannyImg;
-	//Canny(params->grayImg, cannyImg, params->config->lowCannyThreshold, params->config->highCannyThreshold, 3);
-
 	HoughLinesP(houghImg, lines, 1, CV_PI / 180, edgeConfig->minVotes, edgeConfig->minLineLength, edgeConfig->maxLineGap);
 
 	Mat houghTransform = edgeConfig->origImg.clone();
-
-
-	//drawLines(temp, lines, *params->config, true);
-
-	//cvSetWindowProperty(params->windowName.c_str(), WND_PROP_AUTOSIZE, WINDOW_AUTOSIZE);
 	
 	edgeConfig -> edgeLines = lines;
 	cout << "\n lines.size() = " << lines.size();
@@ -72,7 +62,7 @@ void LineDetector::houghPCallback(int, void *userdata) {
 	}
 
 	int img_num = 3;
-	displayImg(houghTransform, edgeConfig->houghWindowName, "center", edgeConfig->screenLength, edgeConfig->screenWidth, img_num);
+	displayImg(houghTransform, edgeConfig->houghWindowName, edgeConfig->screenWidth, edgeConfig->screenHeight, img_num);
 	// cv::imshow(params->windowName, temp);
 
 }
@@ -82,11 +72,11 @@ void LineDetector::morphParametersP2() {
 	namedWindow(this->configParams.edgeParams.morphWindowName2, WINDOW_AUTOSIZE);
 
 	//imshow(title, Img); // Show our image inside it.  // 
-	moveWindow(this->configParams.edgeParams.morphWindowName2, 0, int(this->configParams.edgeParams.screenWidth / 2));
-	resizeWindow(this->configParams.edgeParams.morphWindowName2, int(this->configParams.edgeParams.screenLength / 2), int(this->configParams.edgeParams.screenWidth / 2));
+	moveWindow(this->configParams.edgeParams.morphWindowName2, 0, int(this->configParams.edgeParams.screenHeight / 2));
+	resizeWindow(this->configParams.edgeParams.morphWindowName2, int(this->configParams.edgeParams.screenWidth / 2), int(this->configParams.edgeParams.screenHeight / 2));
 
 	createTrackbar("MorphType", this->configParams.edgeParams.morphWindowName2, &this->configParams.edgeParams.morphTransformType_, 8, morphCallback2, &this->configParams.edgeParams);
-	createTrackbar("MorphSize", this->configParams.edgeParams.morphWindowName2, &this->configParams.edgeParams.kernel_morph_size_, 21, morphCallback2, &this->configParams.edgeParams);
+	createTrackbar("KernelSize", this->configParams.edgeParams.morphWindowName2, &this->configParams.edgeParams.kernel_morph_size_, 21, morphCallback2, &this->configParams.edgeParams);
 	//createTrackbar("MorphShape", this->configParams.edgeParams.morphWindowName, &this->configParams.edgeParams.morph_elem_shape, 2, edgeDetectCallback, &this->configParams.edgeParams);
 	
 	houghParametersP();
@@ -130,7 +120,7 @@ void LineDetector::morphCallback2(int, void *userdata) {
 	edgeConfig->morphImg2 = morphImg2;
 
 	int img_num = 2;
-	displayImg(morphImg2, edgeConfig->morphWindowName2, "center", edgeConfig->screenLength, edgeConfig->screenWidth, img_num);
+	displayImg(morphImg2, edgeConfig->morphWindowName2, edgeConfig->screenWidth, edgeConfig->screenHeight, img_num);
 	houghPCallback(0, edgeConfig);
 }
 
@@ -140,11 +130,11 @@ void LineDetector::morphParametersP() {
 	namedWindow(this->configParams.edgeParams.morphWindowName, WINDOW_AUTOSIZE);
 	
 	//imshow(title, Img); // Show our image inside it.
-	moveWindow(this->configParams.edgeParams.morphWindowName, int(this->configParams.edgeParams.screenLength / 2), 0);
-	resizeWindow(this->configParams.edgeParams.morphWindowName, int(this->configParams.edgeParams.screenLength / 2), int(this->configParams.edgeParams.screenWidth / 2));
+	moveWindow(this->configParams.edgeParams.morphWindowName, int(this->configParams.edgeParams.screenWidth / 2), 0);
+	resizeWindow(this->configParams.edgeParams.morphWindowName, int(this->configParams.edgeParams.screenWidth / 2), int(this->configParams.edgeParams.screenHeight / 2));
 
 	createTrackbar("MorphType", this->configParams.edgeParams.morphWindowName, &this->configParams.edgeParams.morphTransformType, 8, morphCallback, &this->configParams.edgeParams);
-	createTrackbar("MorphSize", this->configParams.edgeParams.morphWindowName, &this->configParams.edgeParams.kernel_morph_size, 21, morphCallback, &this->configParams.edgeParams);
+	createTrackbar("KernelSize", this->configParams.edgeParams.morphWindowName, &this->configParams.edgeParams.kernel_morph_size, 21, morphCallback, &this->configParams.edgeParams);
 	//createTrackbar("MorphShape", this->configParams.edgeParams.morphWindowName, &this->configParams.edgeParams.morph_elem_shape, 2, edgeDetectCallback, &this->configParams.edgeParams);
 	morphParametersP2();
 	waitKey();
@@ -187,7 +177,7 @@ void LineDetector::morphCallback(int, void *userdata) {
 	edgeConfig->morphImg = morphImg;
 
 	int img_num = 1;
-	displayImg(morphImg, edgeConfig->morphWindowName, "center", edgeConfig->screenLength, edgeConfig->screenWidth, img_num);
+	displayImg(morphImg, edgeConfig->morphWindowName, edgeConfig->screenWidth, edgeConfig->screenHeight, img_num);
 	morphCallback2(0, edgeConfig);
 }
 
@@ -195,7 +185,7 @@ void LineDetector::morphCallback(int, void *userdata) {
 void LineDetector::edgeParametersP() {
 
 	namedWindow(this->configParams.edgeParams.edgeWindowName, WINDOW_AUTOSIZE);
-	resizeWindow(this->configParams.edgeParams.edgeWindowName, int(this->configParams.edgeParams.screenLength / 2), int(this->configParams.edgeParams.screenWidth / 2));
+	resizeWindow(this->configParams.edgeParams.edgeWindowName, int(this->configParams.edgeParams.screenWidth / 2), int(this->configParams.edgeParams.screenHeight / 2));
 	moveWindow(this->configParams.edgeParams.edgeWindowName, 0, 0);
 	
 	createTrackbar("BlurLevel", this->configParams.edgeParams.edgeWindowName, &this->configParams.edgeParams.gauss_ksize, 15, edgeDetectCallback, &this->configParams.edgeParams);
@@ -225,7 +215,7 @@ void LineDetector::edgeDetectCallback(int, void *userdata) {
 		Canny(cannyImg, cannyImg, edgeConfig->lowThresh, edgeConfig->highThresh, cannyKernelSize);
 		edgeConfig->cannyImg = cannyImg.clone();
 		int img_num = 0;
-		displayImg(cannyImg, edgeConfig->edgeWindowName, "center", edgeConfig->screenLength, edgeConfig->screenWidth, img_num);
+		displayImg(cannyImg, edgeConfig->edgeWindowName, edgeConfig->screenWidth, edgeConfig->screenHeight, img_num);
 		morphCallback(0, edgeConfig);
 	}
 	
@@ -248,9 +238,8 @@ void LineDetector::edgeDetectCallback(int, void *userdata) {
 
 void LineDetector::blurThreshParametersP() {
 
-
 	namedWindow(this->configParams.edgeParams.blurThreshWindowName, WINDOW_AUTOSIZE);
-	resizeWindow(this->configParams.edgeParams.blurThreshWindowName, int(this->configParams.edgeParams.screenLength / 2), int(this->configParams.edgeParams.screenWidth / 2));
+	resizeWindow(this->configParams.edgeParams.blurThreshWindowName, int(this->configParams.edgeParams.screenWidth / 2), int(this->configParams.edgeParams.screenHeight / 2));
 	moveWindow(this->configParams.edgeParams.blurThreshWindowName, 0, 0);
 
 	createTrackbar("BlurLevel", this->configParams.edgeParams.blurThreshWindowName, &this->configParams.edgeParams.gauss_ksize, 10, blurThreshCallback, &this->configParams.edgeParams);
@@ -285,60 +274,47 @@ void LineDetector::blurThreshCallback(int, void *userdata) {
 
 	int img_num = 0;
 
-	displayImg(blurThreshImg, edgeConfig->blurThreshWindowName, "center", edgeConfig->screenLength, edgeConfig->screenWidth, img_num);
+	displayImg(blurThreshImg, edgeConfig->blurThreshWindowName, edgeConfig->screenWidth, edgeConfig->screenHeight, img_num);
 	edgeDetectCallback(0, edgeConfig);
 };
 
 
-void LineDetector::displayImg(Mat img, const std::string title, std::string position, int screenLength, int screenwidth, int img_num) {
+void LineDetector::displayImg(Mat img, const std::string title, int screenWidth, int screenHeight, int img_num) {
 
-	double length = img.rows;  //obtain size of image and halve it in order to fit 
-	double width = img.cols;
-	double ratio2;
-	ratio2 = length / width;
-	//cout << length << " " << width;
-	//float ratio_img_screen_length = (screenLength / 2) / img.rows;
-	//float ratio_img_screen_width = (screenwidth / 2) / img.rows;
-
-	// Consider the following types of scenarios
-	int maxRows = int(screenwidth / 2);
-	int maxCols = int(screenLength / 2);
-	Mat img_;
-	if (width < length) {
-		resize(img, img_, cv::Size(), maxRows / length, maxRows / length);
-		
-	}
+	double img_width = img.cols;  //obtain size of image and halve it in order to fit 
+	double img_height = img.rows;
 	
-	else {
-		if (img_num == 0){
-			resize(img, img_, cv::Size(), maxCols / width, maxCols / width);
-			cout << title << " " << float(maxCols / width) << " " << float(maxCols / width) << endl;
+	if (img_num != -1) {
+		int maxRows = int(screenHeight / 2);
+		int maxCols = int(screenWidth / 2);
+		Mat img_;
+
+		if (img.cols < img.rows) {
+			resize(img, img_, cv::Size(), maxRows / img_height, maxRows / img_height);
 		}
+
 		else {
-			cout << img_.cols << " " << img_.rows;
-			//img_ = img.clone();
-			resize(img, img_, cv::Size(), maxCols / width, maxCols / width);
+			resize(img, img_, cv::Size(), maxCols / img_width, maxCols / img_width);
 		}
-		//cout << maxCols << "width = " << width << endl;
+
+		if (img_num == 0) {
+			moveWindow(title, 0, 0);
+		}
+		else if (img_num == 1) {
+			moveWindow(title, maxCols, 0);
+		}
+		else if (img_num == 2) {
+			moveWindow(title, 0, maxRows);
+		}
+
+		else if (img_num == 3) {
+			moveWindow(title, maxCols, maxRows);
+		}
+
+		imshow(title, img_);
 	}
 
-	//cout << maxRows / width << " " << maxRows * ratio2 / width;
-	if (img_num == 0) {
-		moveWindow(title, 0, 0);
-	}
-	else if (img_num == 1) {
-		moveWindow(title, maxCols, 0);
-	}
-	else if (img_num == 2) {
-		moveWindow(title, 0, maxRows);
-	}
-
-	else if (img_num == 3) {
-		moveWindow(title, maxCols, maxRows);
-	}
-	//namedWindow(title, WINDOW_NORMAL);
-	//resizeWindow(title, int(screenLength / 2), int(screenwidth / 2));
-	imshow(title, img_);
+	imshow(title, img);
 
 };
 

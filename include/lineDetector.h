@@ -28,42 +28,54 @@ public:
 		const std::string houghWindowName = "4. Hough Operations";
 		const int screenHeight = 1080;
 		const int screenWidth = 1650;
+		float newCols;
+		float newRows;
 
 		// Edge Detection Operations
-		int lowThresh = 20;
-		int highThresh = 150;
+		int lowThresh = 42;
+		int highThresh = 106;
 		int cannyKernel = 0;
 		cv::Mat origImg;
 		cv::Mat cannyImg;
 		cv::Mat blurThreshImg;
 
 		// Blur Parameters
-		int gauss_ksize = 0;
+		int gauss_ksize = 10;
 
 		// Binary Thresholding
 		int thresBin = 0;
 
 		// Morphological Operations
 		int morph_elem_shape = 0;
-		int	kernel_morph_size = 0;
-		int morphTransformType = 0;
+		int morphTransformType = 1;
+		int	kernel_morph_size = 2;
+		
 		int morphTransformType_ = 0;
-		int	kernel_morph_size_ = 0;
+		int	kernel_morph_size_ = 1;
 		cv::Mat morphImg;
 		cv::Mat morphImg2;
 
 		// Hough transforms
+		// --Lines
 		int houghThreshold = 300;
 		int apertureSize = 1;
-		int minVotes = 55;
-		int minVotesLim = 200;
-		int minLineLengthLimit = 500;
-		int minLineLength = 0;
-		int maxLineGap = 35;
-		int maxLineGapLimit = 500;
+		int minVotes = 62;
+		int minVotesLim = 100;
+		int minLineLengthLimit = 100;
+		int minLineLength = 56;
+		int maxLineGap = 6;
+		int maxLineGapLimit = 20;
 		int lineThickness = 2;
 		std::vector<cv::Vec4i> edgeLines;
 		cv::Mat houghImg;
+		// -- Circles
+		int centreThresh = 100;
+		int circleThickness = 1;
+		bool clrChange = true;
+		int minRadius = 2;
+		int maxRadius = 50;
+		int minDistBtwCenters = 10;
+		int dp = 2; // Inverse ratio of the accumulator resolution to the image resolution
 
 	};
 
@@ -92,10 +104,10 @@ public:
 	void houghParametersP();
 	static void houghPCallback(int, void *userdata);
 
-
-	//  -- Helper functions
-	static void displayImg(cv::Mat Img, const std::string title, int screenLength, int screenwidth, int numImgs);
-	static void drawLines(cv::Mat& Img);
+	// -- Helper functions
+	static void displayImg(cv::Mat Img, const std::string title, int screenWidth, int screenHeight, int imgNum);
+	static void drawLines(EdgeConfig* edgeParams, cv::Mat& Img, std::vector<cv::Vec4i> lines);
+	static void drawCircles(EdgeConfig * edgeParams, cv::Mat & img, const std::vector<cv::Vec3f>& circles);
 	static void PrintFullPath(char * partialPath);
 	static void func();
 };

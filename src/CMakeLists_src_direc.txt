@@ -1,0 +1,17 @@
+cmake_minimum_required(VERSION 3.12)
+
+find_package(OpenCV REQUIRED)
+
+
+
+include_directories(${OpenCV_INCLUDE_DIRS})
+
+include_directories(../include)
+
+add_library(LineDetection STATIC lineDetector.cpp ../include/lineDetector.h)
+
+target_link_libraries(LineDetection ${OpenCV_LIBS})
+
+#target_link_libraries(ShapeDetection ${OpenCV_LIBS}) 
+
+ADD_EXECUTABLE( ShapeDetection main.cpp ../include/lineDetector.h)

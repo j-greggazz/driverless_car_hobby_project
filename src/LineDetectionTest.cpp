@@ -6,42 +6,80 @@
 using namespace cv;
 using namespace std;
 
+void setup(LineDetector& ld_, Mat& img);
+int loadVideo();
 void lineDetectionTest() {
 
-	// SetUp 
-	
-	//LineDetector::PrintFullPath(".\\");
-	//LineDetector::func();
 
+	
+	loadVideo();
+	//Mat img = imread("../data/sample_car.jpg");
+	//setup(ld, img);
+	waitKey();
+
+	//LineDetector::displayImg(ld.configParams.edgeParams.cannyImg, "FINISHED", ld.configParams.edgeParams.screenWidth, ld.configParams.edgeParams.screenHeight, -1);
+	//cout << "here" << endl;
+	//cout << "Canny settings: " << ld.configParams.edgeParams.highThresh << endl;
+}
+
+int loadVideo() {
+	
 	LineDetector ld;
-	
-	Mat img = imread("../data/sample_car.jpg");
-	/*
-	double img_width = img.cols;  //obtain size of image and halve it in order to fit 
-	double img_height = img.rows;
-	int maxHeight = int(ld.configParams.edgeParams.screenHeight / 2);
-	int maxWidth = int(ld.configParams.edgeParams.screenWidth / 2);
 
-	int newCols;
-	int newRows;
-	int diff_height = maxHeight - img_height;
-	int diff_width = maxWidth - img_width;
+	//--- INITIALIZE VIDEOCAPTURE
+	Mat frame;
+	VideoCapture vCap;
+	vCap.open("../data/dashboardVid.mp4");
+	bool firstFrame = false;
 
-	if (diff_height < diff_width) {
-		newCols = 0.5 * maxHeight;
-		newRows = img.rows * newCols / img.cols;
+	if (!vCap.isOpened()) {
+		cout << "Error reading file: Check filepath." << endl;
+		waitKey();
+		return 0;
 	}
+
+	else if (vCap.get(CAP_PROP_FRAME_COUNT) < 1) {
+		cout << "Error: At least one frame is required" << endl;
+		waitKey();
+		return(0);
+	}
+
 	else {
-		newRows = 0.5 * maxWidth;
-		newCols = img.cols * newRows / img.rows;
+		//cout << "Number of frames = " << vCap.get(CAP_PROP_FRAME_COUNT) << endl;
+		vCap.read(frame);
+		
+		char quit = 0; // Ascii value is 113
+
+		while (vCap.isOpened() && quit != 113) {
+			
+			if (firstFrame) {
+				setup(ld, frame);
+				firstFrame = false;
+			}
+
+			else if ((vCap.get(CAP_PROP_POS_FRAMES) + 1) < vCap.get(CAP_PROP_FRAME_COUNT)) {       // continue processing as long as further frames are available
+				vCap.read(frame);
+				ld.configParams.edgeParams.currImg = frame;
+				ld.cleanImg();
+
+				imshow("Sample", frame);
+				waitKey(100);
+			}
+
+			
+		}
+
+		return 1;
 	}
 
-	ld.configParams.edgeParams.newCols = newCols;
-	ld.configParams.edgeParams.newRows = newRows;
-	*/
-	int maxHeight = int(ld.configParams.edgeParams.screenHeight / 2);
-	int maxWidth = int(ld.configParams.edgeParams.screenWidth / 3);
 
+
+}
+
+void setup(LineDetector& ld_, Mat& img) {
+
+	int maxHeight = int(ld_.configParams.edgeParams.screenHeight / 2);
+	int maxWidth = int(ld_.configParams.edgeParams.screenWidth / 3);
 
 	int new_cols = int(float(maxHeight) / float(img.rows) * img.cols);
 	int new_rows = int(float(maxWidth) / float(img.cols) * img.rows);
@@ -54,28 +92,22 @@ void lineDetectionTest() {
 		new_rows = maxHeight;
 	}
 
+	ld_.configParams.edgeParams.newCols = new_cols;
+	ld_.configParams.edgeParams.newRows = new_rows;
+	ld_.configParams.edgeParams.recHeight = new_rows;
+	ld_.configParams.edgeParams.recWidth = new_cols;
+
 	cv::Mat m;
 	const std::string winName = "Background";
 	cv::namedWindow(winName, cv::WINDOW_AUTOSIZE);
-	m.create(int(ld.configParams.edgeParams.screenHeight*0.95), ld.configParams.edgeParams.screenWidth, CV_32FC3);
+	m.create(int(ld_.configParams.edgeParams.screenHeight*0.95), ld_.configParams.edgeParams.screenWidth, CV_32FC3);
 	m.setTo(cv::Scalar(255, 255, 255));
 	moveWindow(winName, 0, 0);
 	cv::imshow(winName, m);
-	
-	//cv::namedWindow(winName, cv::WINDOW_AUTOSIZE);
 
-	ld.configParams.edgeParams.newCols = new_cols;
-	ld.configParams.edgeParams.newRows = new_rows;
-
-	ld.configParams.edgeParams.origImg = img.clone();
-	ld.edgeParametersP();
-	waitKey();
-	LineDetector::displayImg(ld.configParams.edgeParams.cannyImg, "FINISHED", ld.configParams.edgeParams.screenWidth, ld.configParams.edgeParams.screenHeight, -1);
-	cout << "here" << endl;
-	cout << "Canny settings: " << ld.configParams.edgeParams.highThresh << endl;
-
-	waitKey();
-	
-	
-	
+	ld_.configParams.edgeParams.origImg = img.clone();
+	ld_.setROI_Box();
+	//LineDetector::PrintFullPath(".\\");
+	//LineDetector::func();
 }
+

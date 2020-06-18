@@ -6,26 +6,25 @@ using namespace std;
 LineDetector::LineDetector() {
 	struct ConfigParams configParams;
 }
-
 LineDetector:: ~LineDetector() {}; 
+
+/* -------------------- Preprocessing --------------------*/
 
 void LineDetector::houghCParameters() {
 
 	namedWindow(this->configParams.edgeParams.houghCWindowName, WINDOW_AUTOSIZE);
-	moveWindow(this->configParams.edgeParams.houghCWindowName, int(2 * this->configParams.edgeParams.screenWidth / 3), 0);
+	moveWindow(this->configParams.edgeParams.houghCWindowName, int(2 * this->configParams.edgeParams.screenWidth / 3), int(this->configParams.edgeParams.screenHeight / 2));
 	resizeWindow(this->configParams.edgeParams.houghCWindowName, int(configParams.edgeParams.newCols), int(configParams.edgeParams.newRows));
 
 	createTrackbar("minRadius", this->configParams.edgeParams.houghCWindowName, &this->configParams.edgeParams.minRadius, int(this->configParams.edgeParams.minRadius * 2.5), houghC_Callback, &this->configParams.edgeParams);
 	createTrackbar("maxRadius", this->configParams.edgeParams.houghCWindowName, &this->configParams.edgeParams.maxRadius, int(this->configParams.edgeParams.maxRadius * 2.5), houghC_Callback, &this->configParams.edgeParams);
 	createTrackbar("minDistBtw", this->configParams.edgeParams.houghCWindowName, &this->configParams.edgeParams.minDistBtwCenters, int(this->configParams.edgeParams.minDistBtwCenters * 2.5), houghC_Callback, &this->configParams.edgeParams);
-	createTrackbar("centreThresh", this->configParams.edgeParams.houghCWindowName, &this->configParams.edgeParams.centreThresh, int(this->configParams.edgeParams.centreThresh * 2.5), houghC_Callback, &this->configParams.edgeParams);
+	createTrackbar("cntrThresh", this->configParams.edgeParams.houghCWindowName, &this->configParams.edgeParams.centreThresh, int(this->configParams.edgeParams.centreThresh * 2.5), houghC_Callback, &this->configParams.edgeParams);
 
 	waitKey();
 	destroyAllWindows();
 	destroyWindow(this->configParams.edgeParams.houghCWindowName);
 };
-
-
 void LineDetector::houghC_Callback(int, void *userdata) {
 
 	EdgeConfig *edgeConfig = reinterpret_cast<EdgeConfig *>(userdata);
@@ -43,17 +42,16 @@ void LineDetector::houghC_Callback(int, void *userdata) {
 	// int minRadiusOffset = edgeConfig->minRadius + 
 	cv::HoughCircles(houghImg, circles, HOUGH_GRADIENT, edgeConfig->dp, edgeConfig->minDistBtwCenters, edgeConfig->highThresh, edgeConfig->centreThresh, edgeConfig->minRadius, edgeConfig->maxRadius);
 
-	int img_num = 4;
+	int img_num = 5;
 	//drawLines(edgeConfig, houghTransform, lines);
 	drawCircles(edgeConfig, houghTransform, circles);
 	displayImg(houghTransform, edgeConfig->houghCWindowName, edgeConfig->screenWidth, edgeConfig->screenHeight, img_num);
 }
 
-
 void LineDetector::houghLParametersP() {
 
 	namedWindow(this->configParams.edgeParams.houghWindowName, WINDOW_AUTOSIZE);	
-	moveWindow(this->configParams.edgeParams.houghWindowName, int(this->configParams.edgeParams.screenWidth / 3), int(this->configParams.edgeParams.screenHeight / 2));
+	moveWindow(this->configParams.edgeParams.houghWindowName, int(2 * this->configParams.edgeParams.screenWidth / 3), 0);
 	resizeWindow(this->configParams.edgeParams.houghWindowName, int(configParams.edgeParams.newCols), int(configParams.edgeParams.newRows));
 
 	createTrackbar("minVotes", this->configParams.edgeParams.houghWindowName, &this->configParams.edgeParams.minVotes, this->configParams.edgeParams.minVotesLim, houghLPCallback, &this->configParams.edgeParams);
@@ -65,8 +63,6 @@ void LineDetector::houghLParametersP() {
 	destroyAllWindows();
 	destroyWindow(this->configParams.edgeParams.houghWindowName);
 };
-
-
 void LineDetector::houghLPCallback(int, void *userdata) {
 	
 	EdgeConfig *edgeConfig = reinterpret_cast<EdgeConfig *>(userdata);
@@ -82,52 +78,11 @@ void LineDetector::houghLPCallback(int, void *userdata) {
 	vector<Vec3f> circles;
 	cv::HoughCircles(houghImg, circles, HOUGH_GRADIENT, edgeConfig->dp, edgeConfig->minDistBtwCenters, edgeConfig->highThresh, edgeConfig->centreThresh, edgeConfig->minRadius, edgeConfig->maxRadius);
 	*/
-	int img_num = 3;
+	int img_num = 4;
 	drawLines(edgeConfig, houghTransform, lines);
 	//drawCircles(edgeConfig, houghTransform, circles);
 	displayImg(houghTransform, edgeConfig->houghWindowName, edgeConfig->screenWidth, edgeConfig->screenHeight, img_num);
 	houghC_Callback(0, edgeConfig);
-}
-
-void LineDetector::drawLines(EdgeConfig* edgeParams, cv::Mat& img, std::vector<cv::Vec4i> lines){
-	for (auto it = lines.begin(); it != lines.end(); ++it) {
-		Point a, b;
-		auto line = *it;
-		int x = line[0] + line[1] + line[2] + line[3];
-
-		if (x != 0) {
-			a.x = line[0];
-			a.y = line[1];
-			b.x = line[2];
-			b.y = line[3];
-			cv::line(img, a, b, Scalar(0, 0, 255), edgeParams->lineThickness, LINE_AA);
-		}
-	}
-}
-
-void LineDetector::drawCircles(EdgeConfig* edgeParams, cv::Mat& img, const std::vector<cv::Vec3f>& circles) {
-
-	for (size_t i = 0; i < circles.size(); i++)
-	{
-		int radius = cvRound(circles[i][2]);
-		Point centre(cvRound(circles[i][0]), cvRound(circles[i][1]));
-
-		if (edgeParams->clrChange) {
-			if (i % 2 == 0) {
-				circle(img, centre, 3, Scalar(0, 255, 0), edgeParams->circleThickness, 8, 0);
-				circle(img, centre, radius, Scalar(0, 255, 0), edgeParams->circleThickness, 8, 0);
-			}
-			else {
-				circle(img, centre, 3, Scalar(0, 0, 255), edgeParams->circleThickness, 8, 0);
-				circle(img, centre, radius, Scalar(0, 0, 255), edgeParams->circleThickness, 8, 0);
-			}
-		}
-		else {
-			circle(img, centre, 3, Scalar(255, 0, 0), edgeParams->circleThickness, 8, 0);
-			circle(img, centre, radius, Scalar(255, 0, 0), edgeParams->circleThickness, 8, 0);
-		}
-
-	}
 }
 
 void LineDetector::morphParametersP2() {
@@ -135,7 +90,7 @@ void LineDetector::morphParametersP2() {
 	namedWindow(this->configParams.edgeParams.morphWindowName2, WINDOW_AUTOSIZE);
 
 	//imshow(title, Img); // Show our image inside it.  // 
-	moveWindow(this->configParams.edgeParams.morphWindowName2, int(this->configParams.edgeParams.screenWidth / 3), 0);
+	moveWindow(this->configParams.edgeParams.morphWindowName2, int(this->configParams.edgeParams.screenWidth / 3), int(this->configParams.edgeParams.screenHeight / 2));
 	resizeWindow(this->configParams.edgeParams.morphWindowName2, int(configParams.edgeParams.newCols), int(configParams.edgeParams.newRows));
 
 	createTrackbar("MorphType", this->configParams.edgeParams.morphWindowName2, &this->configParams.edgeParams.morphTransformType_, 8, morphCallback2, &this->configParams.edgeParams);
@@ -147,7 +102,6 @@ void LineDetector::morphParametersP2() {
 	destroyAllWindows();
 	destroyWindow(this->configParams.edgeParams.morphWindowName2);
 }
-
 void LineDetector::morphCallback2(int, void *userdata) {
 	EdgeConfig *edgeConfig = reinterpret_cast<EdgeConfig *>(userdata);
 	int operation = edgeConfig->morphTransformType_ + 1;
@@ -183,16 +137,15 @@ void LineDetector::morphCallback2(int, void *userdata) {
 	}
 	edgeConfig->morphImg2 = morphImg2;
 
-	int img_num = 2;
+	int img_num = 3;
 	displayImg(morphImg2, edgeConfig->morphWindowName2, edgeConfig->screenWidth, edgeConfig->screenHeight, img_num);
 	houghLPCallback(0, edgeConfig);
 }
 
-
 void LineDetector::morphParametersP() {  
 	
 	namedWindow(this->configParams.edgeParams.morphWindowName, WINDOW_AUTOSIZE);
-	moveWindow(this->configParams.edgeParams.morphWindowName, 0, int(this->configParams.edgeParams.screenHeight / 2));
+	moveWindow(this->configParams.edgeParams.morphWindowName, int(this->configParams.edgeParams.screenWidth / 3), 0);
 	resizeWindow(this->configParams.edgeParams.morphWindowName, int(configParams.edgeParams.newCols), int(configParams.edgeParams.newRows));
 
 	createTrackbar("MorphType", this->configParams.edgeParams.morphWindowName, &this->configParams.edgeParams.morphTransformType, 8, morphCallback, &this->configParams.edgeParams);
@@ -203,7 +156,6 @@ void LineDetector::morphParametersP() {
 	destroyAllWindows();
 	destroyWindow(this->configParams.edgeParams.morphWindowName);
 }
-
 void LineDetector::morphCallback(int, void *userdata) {
 	EdgeConfig *edgeConfig = reinterpret_cast<EdgeConfig *>(userdata);
 	int operation = edgeConfig->morphTransformType + 1;
@@ -239,17 +191,16 @@ void LineDetector::morphCallback(int, void *userdata) {
 	}
 	edgeConfig->morphImg = morphImg;
 
-	int img_num = 1;
+	int img_num = 2;
 	displayImg(morphImg, edgeConfig->morphWindowName, edgeConfig->screenWidth, edgeConfig->screenHeight, img_num);
 	morphCallback2(0, edgeConfig);
 }
-
 
 void LineDetector::edgeParametersP() {
 
 	namedWindow(this->configParams.edgeParams.edgeWindowName, WINDOW_AUTOSIZE);
 	resizeWindow(this->configParams.edgeParams.edgeWindowName, int(configParams.edgeParams.newCols), int(configParams.edgeParams.newRows));
-	moveWindow(this->configParams.edgeParams.edgeWindowName, 0, 0);
+	moveWindow(this->configParams.edgeParams.edgeWindowName, 0, int(this->configParams.edgeParams.screenHeight / 2));
 	
 	createTrackbar("BlurLevel", this->configParams.edgeParams.edgeWindowName, &this->configParams.edgeParams.gauss_ksize, 15, edgeDetectCallback, &this->configParams.edgeParams);
 	createTrackbar("CannyLow", this->configParams.edgeParams.edgeWindowName, &this->configParams.edgeParams.lowThresh, 100, edgeDetectCallback, &this->configParams.edgeParams);
@@ -260,13 +211,12 @@ void LineDetector::edgeParametersP() {
 	destroyAllWindows();
 	destroyWindow(this->configParams.edgeParams.edgeWindowName);
 };
-
 void LineDetector::edgeDetectCallback(int, void *userdata) {
 	EdgeConfig *edgeConfig = reinterpret_cast<EdgeConfig *>(userdata);
 	int operation = edgeConfig->morphTransformType + 1;
 	int cannyKernelSize = edgeConfig->cannyKernel + 3;
 	cv::Mat cannyImg;
-	Mat img_ = edgeConfig->origImg.clone();
+	Mat img_ = edgeConfig->roiImg.clone();
 
 	// Blur:
 	if (edgeConfig->gauss_ksize > 0) {
@@ -277,7 +227,7 @@ void LineDetector::edgeDetectCallback(int, void *userdata) {
 	if (!cannyImg.empty()) {
 		Canny(cannyImg, cannyImg, edgeConfig->lowThresh, edgeConfig->highThresh, cannyKernelSize);
 		edgeConfig->cannyImg = cannyImg.clone();
-		int img_num = 0;
+		int img_num = 1;
 		displayImg(cannyImg, edgeConfig->edgeWindowName, edgeConfig->screenWidth, edgeConfig->screenHeight, img_num);
 		morphCallback(0, edgeConfig);
 	}
@@ -298,7 +248,6 @@ void LineDetector::edgeDetectCallback(int, void *userdata) {
 
 }
 
-
 void LineDetector::blurThreshParametersP() {
 
 	namedWindow(this->configParams.edgeParams.blurThreshWindowName, WINDOW_AUTOSIZE);
@@ -313,7 +262,6 @@ void LineDetector::blurThreshParametersP() {
 	//destroyAllWindows();
 	destroyWindow(this->configParams.edgeParams.blurThreshWindowName);
 }
-
 void LineDetector::blurThreshCallback(int, void *userdata) {
 	EdgeConfig *edgeConfig = reinterpret_cast<EdgeConfig *>(userdata);
 	int operation = edgeConfig->morphTransformType + 1;
@@ -340,7 +288,147 @@ void LineDetector::blurThreshCallback(int, void *userdata) {
 	edgeDetectCallback(0, edgeConfig);
 }
 
+void LineDetector::setROI_Box(){
+	namedWindow(this->configParams.edgeParams.roiBoxWindowName, WINDOW_AUTOSIZE);
+	resizeWindow(this->configParams.edgeParams.roiBoxWindowName, int(configParams.edgeParams.newCols), int(configParams.edgeParams.newRows));
+	moveWindow(this->configParams.edgeParams.roiBoxWindowName, 0, 0);
+	size_t max_val_x = this->configParams.edgeParams.origImg.cols;
+	size_t max_val_y = this->configParams.edgeParams.origImg.rows;
+	
+	createTrackbar("X1-Pos", this->configParams.edgeParams.roiBoxWindowName, &this->configParams.edgeParams.x1_roi, max_val_x, roiCallback, &this->configParams.edgeParams);
+	createTrackbar("RecWidth", this->configParams.edgeParams.roiBoxWindowName, &this->configParams.edgeParams.recWidth, max_val_x, roiCallback, &this->configParams.edgeParams);
+	createTrackbar("Y1-Pos", this->configParams.edgeParams.roiBoxWindowName, &this->configParams.edgeParams.y1_roi, max_val_y, roiCallback, &this->configParams.edgeParams);
+	createTrackbar("RecHeight", this->configParams.edgeParams.roiBoxWindowName, &this->configParams.edgeParams.recHeight, max_val_y, roiCallback, &this->configParams.edgeParams);
 
+	edgeParametersP();
+	waitKey();
+	//destroyAllWindows();
+	destroyWindow(this->configParams.edgeParams.blurThreshWindowName);
+}
+void LineDetector::roiCallback(int, void *userdata) {
+	EdgeConfig *edgeConfig = reinterpret_cast<EdgeConfig *>(userdata);   // cvtColor(params->colImg(params->config->roiBbox), params->grayImg, CV_RGB2GRAY);
+	
+
+	Mat img_ = edgeConfig->origImg.clone();
+	Mat roiImg;
+	if (edgeConfig->x1_roi + edgeConfig->recWidth >= img_.cols) {
+		edgeConfig->recWidth = img_.cols - edgeConfig->x1_roi;
+		setTrackbarPos("RecWidth", edgeConfig->roiBoxWindowName, edgeConfig->recWidth);
+	}
+
+	if (edgeConfig->y1_roi + edgeConfig->recHeight >= img_.rows) {
+		edgeConfig->recHeight = img_.rows - edgeConfig->y1_roi;
+		setTrackbarPos("RecHeight", edgeConfig->roiBoxWindowName, edgeConfig->recHeight);
+	}
+
+	Rect roi_box = Rect(edgeConfig->x1_roi, edgeConfig->y1_roi, edgeConfig->recWidth, edgeConfig->recHeight);
+	edgeConfig->roi_Bbox = roi_box;
+	roiImg = img_(roi_box);
+	//cvtColor(img_(roi_box), roiImg, COLOR_BGR2GRAY);
+
+	edgeConfig->roiImg = roiImg.clone();
+
+	int img_num = 0;
+
+	displayImg(roiImg, edgeConfig->roiBoxWindowName, edgeConfig->screenWidth, edgeConfig->screenHeight, img_num);
+	edgeDetectCallback(0, edgeConfig);
+}
+
+/* -------------------- Processing --------------------*/
+void LineDetector::Pipeline(){
+
+
+}
+
+
+void LineDetector::cleanImg() {
+
+	Mat roi_img = this->configParams.edgeParams.currImg(this->configParams.edgeParams.roi_Bbox);
+
+	int cannyKernelSize = this->configParams.edgeParams.cannyKernel + 3;
+	cv::Mat cannyImg;
+	
+	// 1. Blur + Canny
+	// Blur:
+	if (this->configParams.edgeParams.gauss_ksize > 0) {
+		cvtColor(roi_img, cannyImg, COLOR_BGR2GRAY);
+		blur(cannyImg, cannyImg, Size(this->configParams.edgeParams.gauss_ksize, this->configParams.edgeParams.gauss_ksize), Point(-1, -1));
+	}
+	// Edge Detection:
+	if (!cannyImg.empty()) {
+		Canny(cannyImg, cannyImg, this->configParams.edgeParams.lowThresh, this->configParams.edgeParams.highThresh, cannyKernelSize);
+		this->configParams.edgeParams.cannyImg = cannyImg.clone();
+	}
+
+	// 2. Morphological operations
+	int operation = this->configParams.edgeParams.morphTransformType + 1;
+
+	Mat morphImg = this->configParams.edgeParams.cannyImg.clone();
+
+	// Morphological Operations A:
+	if (operation > 3) {
+		Mat str_element = getStructuringElement(this->configParams.edgeParams.morph_elem_shape, Size(2 * this->configParams.edgeParams.kernel_morph_size + 1, 2 * this->configParams.edgeParams.kernel_morph_size + 1), Point(this->configParams.edgeParams.kernel_morph_size, this->configParams.edgeParams.kernel_morph_size));
+		operation -= 2;
+		morphologyEx(morphImg, morphImg, operation, str_element);
+	}
+	else if (operation == 1) {
+		Mat element = getStructuringElement(MORPH_CROSS, Size(this->configParams.edgeParams.kernel_morph_size + 1, this->configParams.edgeParams.kernel_morph_size + 1));//, Point(edgeConfig->kernel_morph_size, edgeConfig->kernel_morph_size));
+		erode(morphImg, morphImg, element, Point(-1, -1), 2, 1, 1);
+	}
+
+	else if (operation == 2) {
+		Mat element = getStructuringElement(MORPH_RECT, Size(this->configParams.edgeParams.kernel_morph_size + 1, this->configParams.edgeParams.kernel_morph_size + 1), Point(this->configParams.edgeParams.kernel_morph_size, this->configParams.edgeParams.kernel_morph_size));
+		dilate(morphImg, morphImg, element);
+	}
+
+	// Morphological Operations B:
+	operation = this->configParams.edgeParams.morphTransformType_ + 1;
+
+	//Mat morphImg2 = this->configParams.edgeParams.morphImg.clone();
+
+	// Morphological Operations:
+	if (operation > 3) {
+		Mat str_element = getStructuringElement(this->configParams.edgeParams.morph_elem_shape, Size(2 * this->configParams.edgeParams.kernel_morph_size_ + 1, 2 * this->configParams.edgeParams.kernel_morph_size_ + 1), Point(this->configParams.edgeParams.kernel_morph_size_, this->configParams.edgeParams.kernel_morph_size_));
+		operation -= 2;
+		morphologyEx(morphImg, morphImg, operation, str_element);
+	}
+	else if (operation == 1) {
+		//if (erosion_elem == 0) { erosion_type = MORPH_RECT; }
+		//else if (erosion_elem == 1) { erosion_type = MORPH_CROSS; }
+		//else if (erosion_elem == 2) { erosion_type = MORPH_ELLIPSE; }
+
+		Mat element = getStructuringElement(MORPH_CROSS, Size(this->configParams.edgeParams.kernel_morph_size_ + 1, this->configParams.edgeParams.kernel_morph_size_ + 1));//, Point(edgeConfig->kernel_morph_size, edgeConfig->kernel_morph_size));
+		erode(morphImg, morphImg, element, Point(-1, -1), 2, 1, 1);
+	}
+
+	else if (operation == 2) {
+		//if (erosion_elem == 0) { erosion_type = MORPH_RECT; }
+		//else if (erosion_elem == 1) { erosion_type = MORPH_CROSS; }
+		//else if (erosion_elem == 2) { erosion_type = MORPH_ELLIPSE; }
+
+		Mat element = getStructuringElement(MORPH_RECT, Size(this->configParams.edgeParams.kernel_morph_size_ + 1, this->configParams.edgeParams.kernel_morph_size_ + 1), Point(this->configParams.edgeParams.kernel_morph_size_, this->configParams.edgeParams.kernel_morph_size_));
+		dilate(morphImg, morphImg, element);
+	}
+
+	if (morphImg.empty()) {
+		morphImg = this->configParams.edgeParams.origImg;
+	}
+	this->configParams.edgeParams.morphImg2 = morphImg;
+	
+	Mat houghImg = this->configParams.edgeParams.morphImg2.clone();
+
+	// 1. Determine hough lines:
+	vector<Vec4i> lines;
+	HoughLinesP(houghImg, lines, 1, CV_PI / 180, this->configParams.edgeParams.minVotes, this->configParams.edgeParams.minLineLength, this->configParams.edgeParams.maxLineGap);
+	this->configParams.edgeParams.edgeLines = lines;
+	//Mat houghTransform = this->configParams.edgeParams.currImg.clone();
+	drawLines(&this->configParams.edgeParams, this->configParams.edgeParams.currImg, lines);
+	//this->configParams.edgeParams.currImg = houghTransform;
+}
+
+void LineDetector::findLines() {}
+
+/* -------------------- Helper functions --------------------*/
 void LineDetector::displayImg(Mat img, const std::string title, int screenWidth, int screenHeight, int img_num) {
 
 	//double img_width = img.cols;  //obtain size of image and halve it in order to fit 
@@ -412,9 +500,52 @@ void LineDetector::displayImg(Mat img, const std::string title, int screenWidth,
 		imshow(title, img);
 	}
 }
+void LineDetector::drawLines(EdgeConfig* edgeParams, cv::Mat& img, std::vector<cv::Vec4i> lines) {
 
+	int x_offset = edgeParams->x1_roi;
+	int y_offset = edgeParams->y1_roi;
+	for (auto it = lines.begin(); it != lines.end(); ++it) {
+		Point a, b;
+		auto line = *it;
+		int x = line[0] + line[1] + line[2] + line[3];
 
+		if (x != 0) {
+			a.x = line[0] + x_offset;
+			a.y = line[1] + y_offset;
+			b.x = line[2] + x_offset;
+			b.y = line[3] + y_offset;
+			cv::line(img, a, b, Scalar(0, 0, 255), edgeParams->lineThickness, LINE_AA);
+		}
+	}
+}
+void LineDetector::drawCircles(EdgeConfig* edgeParams, cv::Mat& img, const std::vector<cv::Vec3f>& circles) {
 
+	for (size_t i = 0; i < circles.size(); i++)
+	{	
+		int x_offset = edgeParams->x1_roi;
+		int y_offset = edgeParams->y1_roi;
+
+		int radius = cvRound(circles[i][2]);
+		Point centre(cvRound(circles[i][0]) + x_offset, cvRound(circles[i][1]) + y_offset);
+
+		if (edgeParams->clrChange) {
+			if (i % 2 == 0) {
+				circle(img, centre, 3, Scalar(0, 255, 0), edgeParams->circleThickness, 8, 0);
+				circle(img, centre, radius, Scalar(0, 255, 0), edgeParams->circleThickness, 8, 0);
+			}
+			else {
+				circle(img, centre, 3, Scalar(0, 0, 255), edgeParams->circleThickness, 8, 0);
+				circle(img, centre, radius, Scalar(0, 0, 255), edgeParams->circleThickness, 8, 0);
+			}
+		}
+		else {
+			circle(img, centre, 3, Scalar(255, 0, 0), edgeParams->circleThickness, 8, 0);
+			circle(img, centre, radius, Scalar(255, 0, 0), edgeParams->circleThickness, 8, 0);
+		}
+
+	}
+}
+//void LineDetector::calcImgDims(EdgeConfig * edgeParams, cv::Mat & img) {};
 
 
 

@@ -25,9 +25,10 @@ public:
 		const std::string edgeWindowName = "1. Canny Edge Detection";
 		const std::string morphWindowName = "2. Morphological Operations 1";
 		const std::string morphWindowName2 = "3. Morphological Operations 2";
-		const std::string houghWindowName = "4. Hough Operations";
+		const std::string houghWindowName = "4. Hough-Line Operations";
+		const std::string houghCWindowName = "5. Hough-Circle Operations";
 		const int screenHeight = 1080;
-		const int screenWidth = 1650;
+		const int screenWidth = 1920;
 		float newCols;
 		float newRows;
 
@@ -56,6 +57,8 @@ public:
 		cv::Mat morphImg2;
 
 		// Hough transforms
+		cv::Mat houghImg;
+
 		// --Lines
 		int houghThreshold = 300;
 		int apertureSize = 1;
@@ -67,12 +70,13 @@ public:
 		int maxLineGapLimit = 20;
 		int lineThickness = 2;
 		std::vector<cv::Vec4i> edgeLines;
-		cv::Mat houghImg;
+		
+
 		// -- Circles
 		int centreThresh = 100;
 		int circleThickness = 1;
 		bool clrChange = true;
-		int minRadius = 2;
+		int minRadius = 10;
 		int maxRadius = 50;
 		int minDistBtwCenters = 10;
 		int dp = 2; // Inverse ratio of the accumulator resolution to the image resolution
@@ -101,8 +105,10 @@ public:
 	static void morphCallback2(int, void *userdata);
 
 	// -- Hough transforms
-	void houghParametersP();
-	static void houghPCallback(int, void *userdata);
+	void houghCParameters();
+	static void houghC_Callback(int, void *userdata);
+	void houghLParametersP();
+	static void houghLPCallback(int, void *userdata);
 
 	// -- Helper functions
 	static void displayImg(cv::Mat Img, const std::string title, int screenWidth, int screenHeight, int imgNum);

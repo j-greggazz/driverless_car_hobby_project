@@ -6,7 +6,7 @@ using namespace std;
 LineDetector::LineDetector() {
 	struct ConfigParams configParams;
 }
-LineDetector:: ~LineDetector() {}; 
+LineDetector:: ~LineDetector() {};
 
 /* -------------------- Preprocessing --------------------*/
 
@@ -50,28 +50,28 @@ void LineDetector::houghC_Callback(int, void *userdata) {
 
 void LineDetector::houghLParametersP() {
 
-	namedWindow(this->configParams.edgeParams.houghWindowName, WINDOW_AUTOSIZE);	
+	namedWindow(this->configParams.edgeParams.houghWindowName, WINDOW_AUTOSIZE);
 	moveWindow(this->configParams.edgeParams.houghWindowName, int(2 * this->configParams.edgeParams.screenWidth / 3), 0);
 	resizeWindow(this->configParams.edgeParams.houghWindowName, int(configParams.edgeParams.newCols), int(configParams.edgeParams.newRows));
 
 	createTrackbar("minVotes", this->configParams.edgeParams.houghWindowName, &this->configParams.edgeParams.minVotes, this->configParams.edgeParams.minVotesLim, houghLPCallback, &this->configParams.edgeParams);
 	createTrackbar("minLength", this->configParams.edgeParams.houghWindowName, &this->configParams.edgeParams.minLineLength, this->configParams.edgeParams.minLineLengthLimit, houghLPCallback, &this->configParams.edgeParams);
 	createTrackbar("maxGap", this->configParams.edgeParams.houghWindowName, &this->configParams.edgeParams.maxLineGap, this->configParams.edgeParams.maxLineGapLimit, houghLPCallback, &this->configParams.edgeParams);
-	
+
 	houghCParameters();
 	waitKey();
 	destroyAllWindows();
 	destroyWindow(this->configParams.edgeParams.houghWindowName);
 };
 void LineDetector::houghLPCallback(int, void *userdata) {
-	
+
 	EdgeConfig *edgeConfig = reinterpret_cast<EdgeConfig *>(userdata);
 	Mat houghImg = edgeConfig->morphImg2.clone();
-	
+
 	// 1. Determine hough lines:
 	vector<Vec4i> lines;
 	HoughLinesP(houghImg, lines, 1, CV_PI / 180, edgeConfig->minVotes, edgeConfig->minLineLength, edgeConfig->maxLineGap);
-	edgeConfig -> edgeLines = lines;
+	edgeConfig->edgeLines = lines;
 	Mat houghTransform = edgeConfig->origImg.clone();
 	/*
 	// 2. Determine elliptical shapes:
@@ -96,7 +96,7 @@ void LineDetector::morphParametersP2() {
 	createTrackbar("MorphType", this->configParams.edgeParams.morphWindowName2, &this->configParams.edgeParams.morphTransformType_, 8, morphCallback2, &this->configParams.edgeParams);
 	createTrackbar("KernelSize", this->configParams.edgeParams.morphWindowName2, &this->configParams.edgeParams.kernel_morph_size_, 5, morphCallback2, &this->configParams.edgeParams);
 	//createTrackbar("MorphShape", this->configParams.edgeParams.morphWindowName, &this->configParams.edgeParams.morph_elem_shape, 2, edgeDetectCallback, &this->configParams.edgeParams);
-	
+
 	houghLParametersP();
 	waitKey();
 	destroyAllWindows();
@@ -107,7 +107,7 @@ void LineDetector::morphCallback2(int, void *userdata) {
 	int operation = edgeConfig->morphTransformType_ + 1;
 
 	Mat morphImg2 = edgeConfig->morphImg.clone();
-	
+
 	// Morphological Operations:
 	if (operation > 3) {
 		Mat str_element = getStructuringElement(edgeConfig->morph_elem_shape, Size(2 * edgeConfig->kernel_morph_size_ + 1, 2 * edgeConfig->kernel_morph_size_ + 1), Point(edgeConfig->kernel_morph_size_, edgeConfig->kernel_morph_size_));
@@ -142,8 +142,8 @@ void LineDetector::morphCallback2(int, void *userdata) {
 	houghLPCallback(0, edgeConfig);
 }
 
-void LineDetector::morphParametersP() {  
-	
+void LineDetector::morphParametersP() {
+
 	namedWindow(this->configParams.edgeParams.morphWindowName, WINDOW_AUTOSIZE);
 	moveWindow(this->configParams.edgeParams.morphWindowName, int(this->configParams.edgeParams.screenWidth / 3), 0);
 	resizeWindow(this->configParams.edgeParams.morphWindowName, int(configParams.edgeParams.newCols), int(configParams.edgeParams.newRows));
@@ -161,7 +161,7 @@ void LineDetector::morphCallback(int, void *userdata) {
 	int operation = edgeConfig->morphTransformType + 1;
 
 	Mat morphImg = edgeConfig->cannyImg.clone();
-	
+
 	// Morphological Operations:
 	if (operation > 3) {
 		Mat str_element = getStructuringElement(edgeConfig->morph_elem_shape, Size(2 * edgeConfig->kernel_morph_size + 1, 2 * edgeConfig->kernel_morph_size + 1), Point(edgeConfig->kernel_morph_size, edgeConfig->kernel_morph_size));
@@ -182,7 +182,7 @@ void LineDetector::morphCallback(int, void *userdata) {
 		//else if (erosion_elem == 1) { erosion_type = MORPH_CROSS; }
 		//else if (erosion_elem == 2) { erosion_type = MORPH_ELLIPSE; }
 
-		Mat element = getStructuringElement(MORPH_RECT, Size(edgeConfig->kernel_morph_size+1, edgeConfig->kernel_morph_size+1), Point(edgeConfig->kernel_morph_size, edgeConfig->kernel_morph_size));
+		Mat element = getStructuringElement(MORPH_RECT, Size(edgeConfig->kernel_morph_size + 1, edgeConfig->kernel_morph_size + 1), Point(edgeConfig->kernel_morph_size, edgeConfig->kernel_morph_size));
 		dilate(morphImg, morphImg, element);
 	}
 
@@ -201,7 +201,7 @@ void LineDetector::edgeParametersP() {
 	namedWindow(this->configParams.edgeParams.edgeWindowName, WINDOW_AUTOSIZE);
 	resizeWindow(this->configParams.edgeParams.edgeWindowName, int(configParams.edgeParams.newCols), int(configParams.edgeParams.newRows));
 	moveWindow(this->configParams.edgeParams.edgeWindowName, 0, int(this->configParams.edgeParams.screenHeight / 2));
-	
+
 	createTrackbar("BlurLevel", this->configParams.edgeParams.edgeWindowName, &this->configParams.edgeParams.gauss_ksize, 15, edgeDetectCallback, &this->configParams.edgeParams);
 	createTrackbar("CannyLow", this->configParams.edgeParams.edgeWindowName, &this->configParams.edgeParams.lowThresh, 100, edgeDetectCallback, &this->configParams.edgeParams);
 	createTrackbar("CannyHigh", this->configParams.edgeParams.edgeWindowName, &this->configParams.edgeParams.highThresh, 150, edgeDetectCallback, &this->configParams.edgeParams);
@@ -267,7 +267,7 @@ void LineDetector::blurThreshCallback(int, void *userdata) {
 	int operation = edgeConfig->morphTransformType + 1;
 	int cannyKernelSize = edgeConfig->cannyKernel + 3;
 	cv::Mat blurThreshImg = edgeConfig->origImg.clone();
-	Mat img_ = edgeConfig->origImg.clone();  
+	Mat img_ = edgeConfig->origImg.clone();
 
 	cvtColor(img_, blurThreshImg, COLOR_BGR2GRAY);
 
@@ -279,22 +279,22 @@ void LineDetector::blurThreshCallback(int, void *userdata) {
 
 	//threshold(blurThreshImg, blurThreshImg, edgeConfig->thresBin, 255, 0);
 	//cvtColor(blurThreshImg, blurThreshImg, COLOR_GRAY2BGR);
-	
+
 	edgeConfig->blurThreshImg = blurThreshImg.clone();
-	
+
 	int img_num = 0;
 
 	displayImg(blurThreshImg, edgeConfig->blurThreshWindowName, edgeConfig->screenWidth, edgeConfig->screenHeight, img_num);
 	edgeDetectCallback(0, edgeConfig);
 }
 
-void LineDetector::setROI_Box(){
+void LineDetector::setROI_Box() {
 	namedWindow(this->configParams.edgeParams.roiBoxWindowName, WINDOW_AUTOSIZE);
 	resizeWindow(this->configParams.edgeParams.roiBoxWindowName, int(configParams.edgeParams.newCols), int(configParams.edgeParams.newRows));
 	moveWindow(this->configParams.edgeParams.roiBoxWindowName, 0, 0);
 	size_t max_val_x = this->configParams.edgeParams.origImg.cols;
 	size_t max_val_y = this->configParams.edgeParams.origImg.rows;
-	
+
 	createTrackbar("X1-Pos", this->configParams.edgeParams.roiBoxWindowName, &this->configParams.edgeParams.x1_roi, max_val_x, roiCallback, &this->configParams.edgeParams);
 	createTrackbar("RecWidth", this->configParams.edgeParams.roiBoxWindowName, &this->configParams.edgeParams.recWidth, max_val_x, roiCallback, &this->configParams.edgeParams);
 	createTrackbar("Y1-Pos", this->configParams.edgeParams.roiBoxWindowName, &this->configParams.edgeParams.y1_roi, max_val_y, roiCallback, &this->configParams.edgeParams);
@@ -307,7 +307,7 @@ void LineDetector::setROI_Box(){
 }
 void LineDetector::roiCallback(int, void *userdata) {
 	EdgeConfig *edgeConfig = reinterpret_cast<EdgeConfig *>(userdata);   // cvtColor(params->colImg(params->config->roiBbox), params->grayImg, CV_RGB2GRAY);
-	
+
 
 	Mat img_ = edgeConfig->origImg.clone();
 	Mat roiImg;
@@ -335,35 +335,31 @@ void LineDetector::roiCallback(int, void *userdata) {
 }
 
 /* -------------------- Processing --------------------*/
-void LineDetector::Pipeline(){
+void LineDetector::Pipeline() {
 
 
 }
 
-
-void LineDetector::cleanImg() {
-
+void LineDetector::processImg() {
 	Mat roi_img = this->configParams.edgeParams.currImg(this->configParams.edgeParams.roi_Bbox);
-
 	int cannyKernelSize = this->configParams.edgeParams.cannyKernel + 3;
 	cv::Mat cannyImg;
-	
-	// 1. Blur + Canny
+
+	// 1. Blur 
 	// Blur:
 	if (this->configParams.edgeParams.gauss_ksize > 0) {
 		cvtColor(roi_img, cannyImg, COLOR_BGR2GRAY);
 		blur(cannyImg, cannyImg, Size(this->configParams.edgeParams.gauss_ksize, this->configParams.edgeParams.gauss_ksize), Point(-1, -1));
 	}
-	// Edge Detection:
+	// 2. Canny Edge Detection:
 	if (!cannyImg.empty()) {
 		Canny(cannyImg, cannyImg, this->configParams.edgeParams.lowThresh, this->configParams.edgeParams.highThresh, cannyKernelSize);
 		this->configParams.edgeParams.cannyImg = cannyImg.clone();
 	}
 
-	// 2. Morphological operations
+	// 3. Morphological operations
 	int operation = this->configParams.edgeParams.morphTransformType + 1;
-
-	Mat morphImg = this->configParams.edgeParams.cannyImg.clone();
+	Mat morphImg = cannyImg;
 
 	// Morphological Operations A:
 	if (operation > 3) {
@@ -384,28 +380,17 @@ void LineDetector::cleanImg() {
 	// Morphological Operations B:
 	operation = this->configParams.edgeParams.morphTransformType_ + 1;
 
-	//Mat morphImg2 = this->configParams.edgeParams.morphImg.clone();
-
-	// Morphological Operations:
 	if (operation > 3) {
 		Mat str_element = getStructuringElement(this->configParams.edgeParams.morph_elem_shape, Size(2 * this->configParams.edgeParams.kernel_morph_size_ + 1, 2 * this->configParams.edgeParams.kernel_morph_size_ + 1), Point(this->configParams.edgeParams.kernel_morph_size_, this->configParams.edgeParams.kernel_morph_size_));
 		operation -= 2;
 		morphologyEx(morphImg, morphImg, operation, str_element);
 	}
 	else if (operation == 1) {
-		//if (erosion_elem == 0) { erosion_type = MORPH_RECT; }
-		//else if (erosion_elem == 1) { erosion_type = MORPH_CROSS; }
-		//else if (erosion_elem == 2) { erosion_type = MORPH_ELLIPSE; }
-
 		Mat element = getStructuringElement(MORPH_CROSS, Size(this->configParams.edgeParams.kernel_morph_size_ + 1, this->configParams.edgeParams.kernel_morph_size_ + 1));//, Point(edgeConfig->kernel_morph_size, edgeConfig->kernel_morph_size));
 		erode(morphImg, morphImg, element, Point(-1, -1), 2, 1, 1);
 	}
 
 	else if (operation == 2) {
-		//if (erosion_elem == 0) { erosion_type = MORPH_RECT; }
-		//else if (erosion_elem == 1) { erosion_type = MORPH_CROSS; }
-		//else if (erosion_elem == 2) { erosion_type = MORPH_ELLIPSE; }
-
 		Mat element = getStructuringElement(MORPH_RECT, Size(this->configParams.edgeParams.kernel_morph_size_ + 1, this->configParams.edgeParams.kernel_morph_size_ + 1), Point(this->configParams.edgeParams.kernel_morph_size_, this->configParams.edgeParams.kernel_morph_size_));
 		dilate(morphImg, morphImg, element);
 	}
@@ -413,19 +398,17 @@ void LineDetector::cleanImg() {
 	if (morphImg.empty()) {
 		morphImg = this->configParams.edgeParams.origImg;
 	}
+
 	this->configParams.edgeParams.morphImg2 = morphImg;
-	
 	Mat houghImg = this->configParams.edgeParams.morphImg2.clone();
 
-	// 1. Determine hough lines:
+	// 4. Determine hough lines:
 	vector<Vec4i> lines;
-	HoughLinesP(houghImg, lines, 1, CV_PI / 180, this->configParams.edgeParams.minVotes, this->configParams.edgeParams.minLineLength, this->configParams.edgeParams.maxLineGap);
-
+	cv::HoughLinesP(houghImg, lines, 1, CV_PI / 180, this->configParams.edgeParams.minVotes, this->configParams.edgeParams.minLineLength, this->configParams.edgeParams.maxLineGap);
 
 	this->configParams.edgeParams.edgeLines = lines;
-	//Mat houghTransform = this->configParams.edgeParams.currImg.clone();
-	drawLines(&this->configParams.edgeParams, this->configParams.edgeParams.currImg, lines);
-	//this->configParams.edgeParams.currImg = houghTransform;
+	bool laneDetect = true;
+	drawLines(&this->configParams.edgeParams, this->configParams.edgeParams.currImg, lines, laneDetect);
 }
 
 void LineDetector::findLines() {}
@@ -443,17 +426,17 @@ void LineDetector::displayImg(Mat img, const std::string title, int screenWidth,
 	int new_rows = int(float(maxWidth) / float(img.cols) * img.rows);
 
 	if (new_cols > maxWidth) {
-		new_cols = maxWidth;		
+		new_cols = maxWidth;
 	}
 
 	else {
 		new_rows = maxHeight;
 	}
-	
-	
+
+
 	/*
 	int newCols;
-	int newRows; 
+	int newRows;
 	int diff_height = maxHeight - img_height;
 	int diff_width = maxWidth - img_width;
 
@@ -468,7 +451,7 @@ void LineDetector::displayImg(Mat img, const std::string title, int screenWidth,
 	*/
 
 	if (img_num != -1) {
-		
+
 		Mat img_;
 		//cout << float(newRows) / float(img.rows) << " " << float(newCols) / float(img.cols);
 		resize(img, img_, cv::Size(), float(new_rows) / float(img.rows), float(new_cols) / float(img.cols));
@@ -492,7 +475,7 @@ void LineDetector::displayImg(Mat img, const std::string title, int screenWidth,
 		else if (img_num == 4) {
 			moveWindow(title, 2 * new_cols, 0);
 		}
-	
+
 
 		resizeWindow(title, img_.cols, img_.rows);
 		imshow(title, img_);
@@ -502,7 +485,7 @@ void LineDetector::displayImg(Mat img, const std::string title, int screenWidth,
 		imshow(title, img);
 	}
 }
-void LineDetector::drawLines(EdgeConfig* edgeParams, cv::Mat& img, std::vector<cv::Vec4i> lines) {
+void LineDetector::drawLines(EdgeConfig* edgeParams, cv::Mat& img, std::vector<cv::Vec4i> lines, bool laneDetection) {
 
 	int x_offset = edgeParams->x1_roi;
 	int y_offset = edgeParams->y1_roi;
@@ -512,7 +495,7 @@ void LineDetector::drawLines(EdgeConfig* edgeParams, cv::Mat& img, std::vector<c
 	float lane_1_yc = 0.;
 	float lane_2_yc = 0.;
 	int count_2 = 0;
-	Point line1_pt1, line1_pt2, line2_pt1, line2_pt2;
+	Point roi_lane1_pt1, roi_lane1_pt2, roi_lane2_pt1, roi_lane2_pt2;
 	for (auto it = lines.begin(); it != lines.end(); ++it) {
 		Point a, b;
 		auto line = *it;
@@ -523,79 +506,103 @@ void LineDetector::drawLines(EdgeConfig* edgeParams, cv::Mat& img, std::vector<c
 			a.y = line[1] + y_offset;
 			b.x = line[2] + x_offset;
 			b.y = line[3] + y_offset;
+			if (laneDetection) {
+				float m = float(b.y - a.y) / float(b.x - a.x);
+				float yc = b.y - m * a.y;
+				if (m >= 0.43 & m <= 0.58) {
+					lane_1_m += m;
+					lane_1_yc += yc;
+					roi_lane1_pt1.x += a.x;
+					roi_lane1_pt1.y += a.y;
+					roi_lane1_pt2.x += b.x;
+					roi_lane1_pt2.y += b.y;
+					count_1 += 1;
+				}
 
-			float m = float(b.y - a.y) / float(b.x - a.x);
-			float yc = b.y - m * a.y;
-			//cout << "gradient = " << m << endl;
-			//cout << "y-intercept = " << yc << endl;
-			if (m >= 0.43 & m <= 0.58) {
-				lane_1_m += m;
-				lane_1_yc += yc;
-				line1_pt1.x += a.x;
-				line1_pt1.y += a.y;
-				line1_pt2.x += b.x;
-				line1_pt2.y += b.y;
-				count_1 += 1;
+				else if (m >= -0.75  & m <= -0.62) {
+					lane_2_m += m;
+					lane_2_yc += yc;
+					roi_lane2_pt1.x += a.x;
+					roi_lane2_pt1.y += a.y;
+					roi_lane2_pt2.x += b.x;
+					roi_lane2_pt2.y += b.y;
+					count_2 += 1;
+				}
 			}
-
-			else if (m >= -0.75  & m <= -0.62) {
-				lane_2_m += m;
-				lane_2_yc += yc;
-				line2_pt1.x += a.x;
-				line2_pt1.y += a.y;
-				line2_pt2.x += b.x;
-				line2_pt2.y += b.y;
-				count_2 += 1;
+			else {
+				cv::line(img, a, b, Scalar(0, 0, 255), edgeParams->lineThickness, LINE_AA);
 			}
 		}
 	}
-	float avgMLane1 = float(lane_1_m) / float(count_1);
-	float avgMLane2 = float(lane_2_m) / float(count_2);
-	float avgYc1 = float(lane_1_yc) / float(count_1);
-	float avgYc2 = float(lane_2_yc) / float(count_2);
+	if (laneDetection) {
+		float avgMLane1 = float(lane_1_m) / float(count_1);
+		float avgMLane2 = float(lane_2_m) / float(count_2);
+		float avgYc1 = float(lane_1_yc) / float(count_1);
+		float avgYc2 = float(lane_2_yc) / float(count_2);
 
-	line1_pt1.x = float(line1_pt1.x) / float(count_1);
-	line1_pt1.y = float(line1_pt1.y) / float(count_1);
-	line1_pt2.x = float(line1_pt2.x) / float(count_1);
-	line1_pt2.y = float(line1_pt2.y) / float(count_1);
-	Point dashbrdLn1Pt, dashbrdLn2Pt;
-	//if (line1_pt1.y > line1_pt2.y) {
-	//	dashbrdLn1Pt.x = 
-	//}
-	
-	line2_pt1.x = float(line2_pt1.x) / float(count_2);
-	line2_pt1.y = float(line2_pt1.y) / float(count_2);
-	line2_pt2.x = float(line2_pt2.x) / float(count_2);
-	line2_pt2.y = float(line2_pt2.y) / float(count_2);
+		roi_lane1_pt1.x = float(roi_lane1_pt1.x) / float(count_1);
+		roi_lane1_pt1.y = float(roi_lane1_pt1.y) / float(count_1);
+		roi_lane1_pt2.x = float(roi_lane1_pt2.x) / float(count_1);
+		roi_lane1_pt2.y = float(roi_lane1_pt2.y) / float(count_1);
 
-	if (count_1 > 0) {
-		cv::line(img, line1_pt1, line1_pt2, Scalar(0, 0, 255), edgeParams->lineThickness, LINE_AA);
-		edgeParams->line1_pt1 = line1_pt1;
-		edgeParams->line1_pt2 = line1_pt2;
+		roi_lane2_pt1.x = float(roi_lane2_pt1.x) / float(count_2);
+		roi_lane2_pt1.y = float(roi_lane2_pt1.y) / float(count_2);
+		roi_lane2_pt2.x = float(roi_lane2_pt2.x) / float(count_2);
+		roi_lane2_pt2.y = float(roi_lane2_pt2.y) / float(count_2);
+
+		Point dashboardLane1, dashboardLane2, line1End, line2End;
+		dashboardLane1.y = img.rows;
+		dashboardLane2.y = img.rows;
+
+		if (roi_lane1_pt1.y < roi_lane1_pt2.y) {
+			line1End = roi_lane1_pt1;
+			dashboardLane1.x = (img.rows - roi_lane1_pt1.y) / avgMLane1 + roi_lane1_pt1.x;
+		}
+
+		else {
+			line1End = roi_lane1_pt2;
+			dashboardLane1.x = (img.rows - roi_lane1_pt2.y) / avgMLane1 + roi_lane1_pt2.x;
+		}
+
+		if (roi_lane2_pt1.y < roi_lane2_pt2.y) {
+			line2End = roi_lane2_pt1;
+			dashboardLane2.x = (img.rows - roi_lane2_pt1.y) / avgMLane2 + roi_lane2_pt1.x;
+		}
+
+		else {
+			line2End = roi_lane2_pt2;
+			dashboardLane2.x = (img.rows - roi_lane2_pt2.y) / avgMLane2 + roi_lane2_pt2.x;
+		}
+
+		if (count_1 > 0) {
+			cv::arrowedLine(img, dashboardLane1, line1End, Scalar(0, 255, 0), edgeParams->lineThickness, LINE_AA);
+			edgeParams->line1_pt1 = line1End;
+			edgeParams->line1_pt2 = dashboardLane1;
+		}
+		else {
+			cv::arrowedLine(img, edgeParams->line1_pt1, edgeParams->line1_pt2, Scalar(0, 0, 255), edgeParams->lineThickness, LINE_AA);
+		}
+
+		if (count_2 > 0) {
+			cv::arrowedLine(img, dashboardLane2, line2End, Scalar(0, 255, 0), edgeParams->lineThickness, LINE_AA);
+			edgeParams->line2_pt1 = line2End;
+			edgeParams->line2_pt2 = dashboardLane2;
+		}
+		else {
+			cv::arrowedLine(img, edgeParams->line2_pt1, edgeParams->line2_pt2, Scalar(0, 0, 255), edgeParams->lineThickness, LINE_AA);
+		}
 	}
-	else {
-		cv::line(img, edgeParams->line1_pt1, edgeParams->line1_pt2, Scalar(0, 255, 0), edgeParams->lineThickness + 1, LINE_AA);
-	}
-	if (count_2 > 0) {
-		cv::line(img, line2_pt1, line2_pt2, Scalar(0, 0, 255), edgeParams->lineThickness, LINE_AA);
-		edgeParams->line2_pt1 = line2_pt1;
-		edgeParams->line2_pt2 = line2_pt2;
-	}
-	else {
-		cv::line(img, edgeParams->line2_pt1, edgeParams->line2_pt2, Scalar(0, 255, 0), edgeParams->lineThickness + 1, LINE_AA);
-	}
 
 
 
-	
 
-	
 
-}	
+
+}
 void LineDetector::drawCircles(EdgeConfig* edgeParams, cv::Mat& img, const std::vector<cv::Vec3f>& circles) {
 
 	for (size_t i = 0; i < circles.size(); i++)
-	{	
+	{
 		int x_offset = edgeParams->x1_roi;
 		int y_offset = edgeParams->y1_roi;
 

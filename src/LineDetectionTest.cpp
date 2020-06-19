@@ -1,5 +1,11 @@
 #include <lineDetector.h>
-
+#include <chrono>
+#include <iostream>
+#include <stdio.h>
+#include <conio.h>
+#include <stdlib.h>
+#include <direct.h>
+#include <string>
 //#define _USE_MATH_DEFINES
 
 
@@ -7,7 +13,7 @@ using namespace cv;
 using namespace std;
 
 void setup(LineDetector& ld_, Mat& img);
-int loadVideo();
+int loadVideo(bool multithreading = false);
 void lineDetectionTest() {
 
 
@@ -22,60 +28,92 @@ void lineDetectionTest() {
 	//cout << "Canny settings: " << ld.configParams.edgeParams.highThresh << endl;
 }
 
-int loadVideo() {
-	
+int loadVideo(bool multithreading) {
+
 	LineDetector ld;
+	if (!multithreading) {
+		//--- INITIALIZE VIDEOCAPTURE
+		Mat frame;
+		VideoCapture vCap;
+		vCap.open("../data/dashboardVid.mp4");
+		bool firstFrame = false;
 
-	//--- INITIALIZE VIDEOCAPTURE
-	Mat frame;
-	VideoCapture vCap;
-	vCap.open("../data/dashboardVid.mp4");
-	bool firstFrame = false;
+		if (!vCap.isOpened()) {
+			cout << "Error reading file: Check filepath." << endl;
+			waitKey();
+			return 0;
+		}
 
-	if (!vCap.isOpened()) {
-		cout << "Error reading file: Check filepath." << endl;
-		waitKey();
-		return 0;
-	}
+		else if (vCap.get(CAP_PROP_FRAME_COUNT) < 1) {
+			cout << "Error: At least one frame is required" << endl;
+			waitKey();
+			return(0);
+		}
 
-	else if (vCap.get(CAP_PROP_FRAME_COUNT) < 1) {
-		cout << "Error: At least one frame is required" << endl;
-		waitKey();
-		return(0);
+		else {
+			//cout << "Number of frames = " << vCap.get(CAP_PROP_FRAME_COUNT) << endl;
+			vCap.read(frame);
+			char quit = 0; // Ascii value is 113
+
+			while (vCap.isOpened() && quit != 113) {
+
+				if (firstFrame) {
+					setup(ld, frame);
+					firstFrame = false;
+				}
+
+				else if ((vCap.get(CAP_PROP_POS_FRAMES) + 1) < vCap.get(CAP_PROP_FRAME_COUNT)) {       // continue processing as long as further frames are available
+					auto start = std::chrono::high_resolution_clock::now();
+					vCap.read(frame);
+					auto finish = std::chrono::high_resolution_clock::now();
+					std::chrono::duration<double> elapsed = finish - start;
+					cout << "Time taken to read frame = " << elapsed.count() << endl;
+
+					ld.configParams.edgeParams.currImg = frame;
+					start = std::chrono::high_resolution_clock::now();
+					ld.processImg();
+					finish = std::chrono::high_resolution_clock::now();
+					elapsed = finish - start;
+					cout << "Time taken for image processing = " << elapsed.count() << endl;
+					start = std::chrono::high_resolution_clock::now();
+					imshow("Sample", frame);
+					finish = std::chrono::high_resolution_clock::now();
+					elapsed = finish - start;
+					cout << "Time taken for imshow = " << elapsed.count() << endl;
+					waitKey(100);
+				}
+
+
+			}
+
+			return 1;
+		}
 	}
 
 	else {
-		//cout << "Number of frames = " << vCap.get(CAP_PROP_FRAME_COUNT) << endl;
-		vCap.read(frame);
-		
-		char quit = 0; // Ascii value is 113
+		Mat frame;
+		VideoCapture vCap;
+		vCap.open("../data/dashboardVid.mp4");
+		bool firstFrame = false;
 
-		while (vCap.isOpened() && quit != 113) {
-			
-			if (firstFrame) {
-				setup(ld, frame);
-				firstFrame = false;
-			}
-
-			else if ((vCap.get(CAP_PROP_POS_FRAMES) + 1) < vCap.get(CAP_PROP_FRAME_COUNT)) {       // continue processing as long as further frames are available
-				vCap.read(frame);
-				ld.configParams.edgeParams.currImg = frame;
-				ld.cleanImg();
-
-				imshow("Sample", frame);
-				waitKey(100);
-			}
-
-			
+		if (!vCap.isOpened()) {
+			cout << "Error reading file: Check filepath." << endl;
+			waitKey();
+			return 0;
 		}
 
-		return 1;
+		else if (vCap.get(CAP_PROP_FRAME_COUNT) < 1) {
+			cout << "Error: At least one frame is required" << endl;
+			waitKey();
+			return(0);
+		}
+
+		else {
+			//cout << "Number of frames = " << vCap.get(CAP_PROP_FRAME_COUNT) << endl;
+			vCap.read(frame);
+		}
 	}
-
-
-
 }
-
 void setup(LineDetector& ld_, Mat& img) {
 
 	int maxHeight = int(ld_.configParams.edgeParams.screenHeight / 2);

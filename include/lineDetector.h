@@ -78,7 +78,7 @@ public:
 		int minLineLength = 56;
 		int maxLineGap = 6;
 		int maxLineGapLimit = 20;
-		int lineThickness = 2;
+		int lineThickness = 4;
 		std::vector<cv::Vec4i> edgeLines;
 		cv::Point line1_pt1, line1_pt2, line2_pt1, line2_pt2;
 		
@@ -127,12 +127,12 @@ public:
 
 	/* -------------------- Processing --------------------*/
 	void Pipeline();
-	void cleanImg();
+	void processImg();
 	void findLines();
 
 	/* -------------------- Helper functions --------------------*/
 	static void displayImg(cv::Mat Img, const std::string title, int screenWidth, int screenHeight, int imgNum);
-	static void drawLines(EdgeConfig* edgeParams, cv::Mat& Img, std::vector<cv::Vec4i> lines);
+	static void drawLines(EdgeConfig* edgeParams, cv::Mat& Img, std::vector<cv::Vec4i> lines, bool laneDetection = false);
 	static void drawCircles(EdgeConfig * edgeParams, cv::Mat & img, const std::vector<cv::Vec3f>& circles);
 	//static void calcImgDims(EdgeConfig * edgeParams, cv::Mat & img);
 	static void PrintFullPath(char * partialPath);

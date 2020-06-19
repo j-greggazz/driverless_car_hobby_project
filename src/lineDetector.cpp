@@ -420,6 +420,8 @@ void LineDetector::cleanImg() {
 	// 1. Determine hough lines:
 	vector<Vec4i> lines;
 	HoughLinesP(houghImg, lines, 1, CV_PI / 180, this->configParams.edgeParams.minVotes, this->configParams.edgeParams.minLineLength, this->configParams.edgeParams.maxLineGap);
+
+
 	this->configParams.edgeParams.edgeLines = lines;
 	//Mat houghTransform = this->configParams.edgeParams.currImg.clone();
 	drawLines(&this->configParams.edgeParams, this->configParams.edgeParams.currImg, lines);
@@ -504,6 +506,13 @@ void LineDetector::drawLines(EdgeConfig* edgeParams, cv::Mat& img, std::vector<c
 
 	int x_offset = edgeParams->x1_roi;
 	int y_offset = edgeParams->y1_roi;
+	float lane_1_m = 0.;
+	float lane_2_m = 0.;
+	int count_1 = 0;
+	float lane_1_yc = 0.;
+	float lane_2_yc = 0.;
+	int count_2 = 0;
+	Point line1_pt1, line1_pt2, line2_pt1, line2_pt2;
 	for (auto it = lines.begin(); it != lines.end(); ++it) {
 		Point a, b;
 		auto line = *it;
@@ -514,10 +523,75 @@ void LineDetector::drawLines(EdgeConfig* edgeParams, cv::Mat& img, std::vector<c
 			a.y = line[1] + y_offset;
 			b.x = line[2] + x_offset;
 			b.y = line[3] + y_offset;
-			cv::line(img, a, b, Scalar(0, 0, 255), edgeParams->lineThickness, LINE_AA);
+
+			float m = float(b.y - a.y) / float(b.x - a.x);
+			float yc = b.y - m * a.y;
+			//cout << "gradient = " << m << endl;
+			//cout << "y-intercept = " << yc << endl;
+			if (m >= 0.43 & m <= 0.58) {
+				lane_1_m += m;
+				lane_1_yc += yc;
+				line1_pt1.x += a.x;
+				line1_pt1.y += a.y;
+				line1_pt2.x += b.x;
+				line1_pt2.y += b.y;
+				count_1 += 1;
+			}
+
+			else if (m >= -0.75  & m <= -0.62) {
+				lane_2_m += m;
+				lane_2_yc += yc;
+				line2_pt1.x += a.x;
+				line2_pt1.y += a.y;
+				line2_pt2.x += b.x;
+				line2_pt2.y += b.y;
+				count_2 += 1;
+			}
 		}
 	}
-}
+	float avgMLane1 = float(lane_1_m) / float(count_1);
+	float avgMLane2 = float(lane_2_m) / float(count_2);
+	float avgYc1 = float(lane_1_yc) / float(count_1);
+	float avgYc2 = float(lane_2_yc) / float(count_2);
+
+	line1_pt1.x = float(line1_pt1.x) / float(count_1);
+	line1_pt1.y = float(line1_pt1.y) / float(count_1);
+	line1_pt2.x = float(line1_pt2.x) / float(count_1);
+	line1_pt2.y = float(line1_pt2.y) / float(count_1);
+	Point dashbrdLn1Pt, dashbrdLn2Pt;
+	//if (line1_pt1.y > line1_pt2.y) {
+	//	dashbrdLn1Pt.x = 
+	//}
+	
+	line2_pt1.x = float(line2_pt1.x) / float(count_2);
+	line2_pt1.y = float(line2_pt1.y) / float(count_2);
+	line2_pt2.x = float(line2_pt2.x) / float(count_2);
+	line2_pt2.y = float(line2_pt2.y) / float(count_2);
+
+	if (count_1 > 0) {
+		cv::line(img, line1_pt1, line1_pt2, Scalar(0, 0, 255), edgeParams->lineThickness, LINE_AA);
+		edgeParams->line1_pt1 = line1_pt1;
+		edgeParams->line1_pt2 = line1_pt2;
+	}
+	else {
+		cv::line(img, edgeParams->line1_pt1, edgeParams->line1_pt2, Scalar(0, 255, 0), edgeParams->lineThickness + 1, LINE_AA);
+	}
+	if (count_2 > 0) {
+		cv::line(img, line2_pt1, line2_pt2, Scalar(0, 0, 255), edgeParams->lineThickness, LINE_AA);
+		edgeParams->line2_pt1 = line2_pt1;
+		edgeParams->line2_pt2 = line2_pt2;
+	}
+	else {
+		cv::line(img, edgeParams->line2_pt1, edgeParams->line2_pt2, Scalar(0, 255, 0), edgeParams->lineThickness + 1, LINE_AA);
+	}
+
+
+
+	
+
+	
+
+}	
 void LineDetector::drawCircles(EdgeConfig* edgeParams, cv::Mat& img, const std::vector<cv::Vec3f>& circles) {
 
 	for (size_t i = 0; i < circles.size(); i++)

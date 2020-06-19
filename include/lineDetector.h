@@ -80,6 +80,7 @@ public:
 		int maxLineGapLimit = 20;
 		int lineThickness = 2;
 		std::vector<cv::Vec4i> edgeLines;
+		cv::Point line1_pt1, line1_pt2, line2_pt1, line2_pt2;
 		
 
 		// -- Circles

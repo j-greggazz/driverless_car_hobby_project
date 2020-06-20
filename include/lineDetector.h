@@ -1,3 +1,4 @@
+#pragma once
 #ifndef lineDetector__H__
 #define lineDetector__H__
 
@@ -19,7 +20,8 @@ public:
 	~LineDetector();
 
 	struct EdgeConfig {
-
+		
+		int id = 0;
 		// Window Properties
 		const std::string blurThreshWindowName = "1. Blur & Thresholding";
 		const std::string roiBoxWindowName = "1. Set Roi-Box";
@@ -81,7 +83,6 @@ public:
 		int lineThickness = 4;
 		std::vector<cv::Vec4i> edgeLines;
 		cv::Point line1_pt1, line1_pt2, line2_pt1, line2_pt2;
-		
 
 		// -- Circles
 		int centreThresh = 100;
@@ -91,6 +92,11 @@ public:
 		int maxRadius = 50;
 		int minDistBtwCenters = 10;
 		int dp = 2; // Inverse ratio of the accumulator resolution to the image resolution
+
+
+		// Multithreading control
+		bool continueProcessing = true;
+		bool newImgAvailable = false;
 
 	};
 
@@ -128,6 +134,7 @@ public:
 	/* -------------------- Processing --------------------*/
 	void Pipeline();
 	void processImg();
+	
 	void findLines();
 
 	/* -------------------- Helper functions --------------------*/
@@ -137,6 +144,7 @@ public:
 	//static void calcImgDims(EdgeConfig * edgeParams, cv::Mat & img);
 	static void PrintFullPath(char * partialPath);
 	static void func();
+	static void processImg_thread(LineDetector& ld);
 
 	
 

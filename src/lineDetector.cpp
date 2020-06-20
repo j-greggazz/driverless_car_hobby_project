@@ -1,4 +1,5 @@
 #include <lineDetector.h>
+
 using namespace cv;
 using namespace std;
 
@@ -629,8 +630,94 @@ void LineDetector::drawCircles(EdgeConfig* edgeParams, cv::Mat& img, const std::
 //void LineDetector::calcImgDims(EdgeConfig * edgeParams, cv::Mat & img) {};
 
 
+/* -------------------- Multithreading -------------------- */
 
+void LineDetector::processImg_thread(LineDetector& ld) {
 
+	int cannyKernelSize = ld.configParams.edgeParams.cannyKernel + 3;
+	cv::Mat cannyImg;
+
+	while (ld.configParams.edgeParams.continueProcessing) {
+
+		if (ld.configParams.edgeParams.newImgAvailable) {
+			Mat roi_img = ld.configParams.edgeParams.currImg(ld.configParams.edgeParams.roi_Bbox);
+			// 1. Blur 
+			// Blur:
+			if (ld.configParams.edgeParams.gauss_ksize > 0) {
+				cvtColor(roi_img, cannyImg, COLOR_BGR2GRAY);
+				blur(cannyImg, cannyImg, Size(ld.configParams.edgeParams.gauss_ksize, ld.configParams.edgeParams.gauss_ksize), Point(-1, -1));
+			}
+			// 2. Canny Edge Detection:
+			if (!cannyImg.empty()) {
+				Canny(cannyImg, cannyImg, ld.configParams.edgeParams.lowThresh, ld.configParams.edgeParams.highThresh, cannyKernelSize);
+				ld.configParams.edgeParams.cannyImg = cannyImg.clone();
+			}
+
+			// 3. Morphological operations
+			int operation = ld.configParams.edgeParams.morphTransformType + 1;
+			Mat morphImg = cannyImg;
+
+			// Morphological Operations A:
+			if (operation > 3) {
+				Mat str_element = getStructuringElement(ld.configParams.edgeParams.morph_elem_shape, Size(2 * ld.configParams.edgeParams.kernel_morph_size + 1, 2 * ld.configParams.edgeParams.kernel_morph_size + 1), Point(ld.configParams.edgeParams.kernel_morph_size, ld.configParams.edgeParams.kernel_morph_size));
+				operation -= 2;
+				morphologyEx(morphImg, morphImg, operation, str_element);
+			}
+			else if (operation == 1) {
+				Mat element = getStructuringElement(MORPH_CROSS, Size(ld.configParams.edgeParams.kernel_morph_size + 1, ld.configParams.edgeParams.kernel_morph_size + 1));//, Point(edgeConfig->kernel_morph_size, edgeConfig->kernel_morph_size));
+				erode(morphImg, morphImg, element, Point(-1, -1), 2, 1, 1);
+			}
+
+			else if (operation == 2) {
+				Mat element = getStructuringElement(MORPH_RECT, Size(ld.configParams.edgeParams.kernel_morph_size + 1, ld.configParams.edgeParams.kernel_morph_size + 1), Point(ld.configParams.edgeParams.kernel_morph_size, ld.configParams.edgeParams.kernel_morph_size));
+				dilate(morphImg, morphImg, element);
+			}
+
+			// Morphological Operations B:
+			operation = ld.configParams.edgeParams.morphTransformType_ + 1;
+
+			if (operation > 3) {
+				Mat str_element = getStructuringElement(ld.configParams.edgeParams.morph_elem_shape, Size(2 * ld.configParams.edgeParams.kernel_morph_size_ + 1, 2 * ld.configParams.edgeParams.kernel_morph_size_ + 1), Point(ld.configParams.edgeParams.kernel_morph_size_, ld.configParams.edgeParams.kernel_morph_size_));
+				operation -= 2;
+				morphologyEx(morphImg, morphImg, operation, str_element);
+			}
+			else if (operation == 1) {
+				Mat element = getStructuringElement(MORPH_CROSS, Size(ld.configParams.edgeParams.kernel_morph_size_ + 1, ld.configParams.edgeParams.kernel_morph_size_ + 1));//, Point(edgeConfig->kernel_morph_size, edgeConfig->kernel_morph_size));
+				erode(morphImg, morphImg, element, Point(-1, -1), 2, 1, 1);
+			}
+
+			else if (operation == 2) {
+				Mat element = getStructuringElement(MORPH_RECT, Size(ld.configParams.edgeParams.kernel_morph_size_ + 1, ld.configParams.edgeParams.kernel_morph_size_ + 1), Point(ld.configParams.edgeParams.kernel_morph_size_, ld.configParams.edgeParams.kernel_morph_size_));
+				dilate(morphImg, morphImg, element);
+			}
+
+			if (morphImg.empty()) {
+				morphImg = ld.configParams.edgeParams.origImg;
+			}
+
+			ld.configParams.edgeParams.morphImg2 = morphImg;
+			Mat houghImg = ld.configParams.edgeParams.morphImg2.clone();
+
+			// 4. Determine hough lines:
+			vector<Vec4i> lines;
+			try {
+				cv::HoughLinesP(houghImg, lines, 1, CV_PI / 180, ld.configParams.edgeParams.minVotes, ld.configParams.edgeParams.minLineLength, ld.configParams.edgeParams.maxLineGap);
+			}
+			catch (cv::Exception& e) {
+				int val = 0;
+			}
+			ld.configParams.edgeParams.edgeLines = lines;
+			bool laneDetect = true;
+			drawLines(&ld.configParams.edgeParams, &ld.configParams.edgeParams.currImg, lines, laneDetect);
+
+			// 5. Confirm image_i processed
+			ld.configParams.edgeParams.newImgAvailable = false;
+		}
+		else {
+			this_thread::sleep_for(chrono::milliseconds(10));
+		}
+	}
+}
 
 
 

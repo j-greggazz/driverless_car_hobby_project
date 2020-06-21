@@ -7,6 +7,8 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/video.hpp>
+#include <opencv2/opencv.hpp>
+
 #include <atomic>
 #include <vector>
 #include <iostream>
@@ -136,8 +138,8 @@ public:
 	/* -------------------- Processing --------------------*/
 	void Pipeline();
 	void processImg();
-	
-	void findLines();
+	void trackCars();
+	void detectLanes();
 
 	/* -------------------- Helper functions --------------------*/
 	static void displayImg(cv::Mat Img, const std::string title, int screenWidth, int screenHeight, int imgNum);

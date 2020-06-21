@@ -342,6 +342,15 @@ void LineDetector::Pipeline() {
 }
 
 void LineDetector::processImg() {
+	detectLanes();
+}
+
+void LineDetector::trackCars(){
+
+
+}
+
+void LineDetector::detectLanes() {
 	Mat roi_img = this->configParams.edgeParams.currImg(this->configParams.edgeParams.roi_Bbox);
 	int cannyKernelSize = this->configParams.edgeParams.cannyKernel + 3;
 	cv::Mat cannyImg;
@@ -412,7 +421,7 @@ void LineDetector::processImg() {
 	drawLines(&this->configParams.edgeParams, this->configParams.edgeParams.currImg, lines, laneDetect);
 }
 
-void LineDetector::findLines() {}
+
 
 /* -------------------- Helper functions --------------------*/
 void LineDetector::displayImg(Mat img, const std::string title, int screenWidth, int screenHeight, int img_num) {

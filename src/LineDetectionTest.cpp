@@ -14,9 +14,12 @@ using namespace std;
 
 void setup(LineDetector& ld_, Mat& img);
 int loadVideo(bool multithreading = true);
+int trackCars();
+void detectAndDisplay(Mat& frame, CascadeClassifier& car_clf);
 void lineDetectionTest() {
-
-	loadVideo();
+	//LineDetector::PrintFullPath(".\\");
+	//loadVideo();
+	trackCars();
 }
 
 int loadVideo(bool multithreading) {
@@ -192,7 +195,7 @@ int loadVideo(bool multithreading) {
 
 					imshow("Sample", frame);
 
-					quit = waitKey(10);
+					quit = waitKey(500);
 
 					/*auto start = std::chrono::high_resolution_clock::now();
 					vCap.read(frame);
@@ -223,109 +226,7 @@ int loadVideo(bool multithreading) {
 
 }
 
-int loadVideo_(bool multithreading) {
 
-	LineDetector ld;
-	if (!multithreading) {
-		//--- INITIALIZE VIDEOCAPTURE
-		Mat frame;
-		VideoCapture vCap;
-		vCap.open("../data/dashboardVid.mp4");
-		bool firstFrame = true;
-
-		if (!vCap.isOpened()) {
-			cout << "Error reading file: Check filepath." << endl;
-			waitKey();
-			return 0;
-		}
-
-		else if (vCap.get(CAP_PROP_FRAME_COUNT) < 1) {
-			cout << "Error: At least one frame is required" << endl;
-			waitKey();
-			return(0);
-		}
-
-		else {
-			//cout << "Number of frames = " << vCap.get(CAP_PROP_FRAME_COUNT) << endl;
-			vCap.read(frame);
-			char quit = 0; // Ascii value is 113
-
-			int i = 0;
-			while (vCap.isOpened() && quit != 113) {
-
-				if (quit == 'q') {
-					quit = true;
-					break;
-				}
-				if (firstFrame) {
-					setup(ld, frame);
-					firstFrame = false;
-				}
-
-				else if ((vCap.get(CAP_PROP_POS_FRAMES) + 1) < vCap.get(CAP_PROP_FRAME_COUNT)) {       // continue processing as long as further frames are available
-
-					vCap.read(frame);
-
-
-					ld.configParams.edgeParams.currImg = frame;
-
-					ld.processImg();
-
-					imshow("Sample", frame);
-
-					quit = waitKey(100);
-
-					/*auto start = std::chrono::high_resolution_clock::now();
-					vCap.read(frame);
-					auto finish = std::chrono::high_resolution_clock::now();
-					std::chrono::duration<double> elapsed = finish - start;
-					cout << "Time taken to read frame = " << elapsed.count() << endl;
-
-					ld.configParams.edgeParams.currImg = frame;
-					start = std::chrono::high_resolution_clock::now();
-					ld.processImg();
-					finish = std::chrono::high_resolution_clock::now();
-					elapsed = finish - start;
-					cout << "Time taken for image processing = " << elapsed.count() << endl;
-					start = std::chrono::high_resolution_clock::now();
-					imshow("Sample", frame);
-					finish = std::chrono::high_resolution_clock::now();
-					elapsed = finish - start;
-					cout << "Time taken for imshow = " << elapsed.count() << endl;
-					waitKey(100);*/
-				}
-
-
-			}
-			destroyWindow("Sample");
-			return 1;
-		}
-	}
-
-	else {
-		Mat frame;
-		VideoCapture vCap;
-		vCap.open("../data/dashboardVid.mp4");
-		bool firstFrame = false;
-
-		if (!vCap.isOpened()) {
-			cout << "Error reading file: Check filepath." << endl;
-			waitKey();
-			return 0;
-		}
-
-		else if (vCap.get(CAP_PROP_FRAME_COUNT) < 1) {
-			cout << "Error: At least one frame is required" << endl;
-			waitKey();
-			return(0);
-		}
-
-		else {
-			//cout << "Number of frames = " << vCap.get(CAP_PROP_FRAME_COUNT) << endl;
-			vCap.read(frame);
-		}
-	}
-}
 void setup(LineDetector& ld_, Mat& img) {
 
 	int maxHeight = int(ld_.configParams.edgeParams.screenHeight / 2);
@@ -361,3 +262,81 @@ void setup(LineDetector& ld_, Mat& img) {
 	//LineDetector::func();
 }
 
+int trackCars() {
+	//CvHaarClassifierCascade *cascade;
+	CascadeClassifier car_clf;
+	car_clf.load("../models/cars.xml");
+	LineDetector::PrintFullPath(".\\");
+
+	Mat frame;
+	VideoCapture vCap;
+	vCap.open("../data/dashboardVid.mp4");
+	bool firstFrame = false;
+
+	if (!vCap.isOpened()) {
+		cout << "Error reading file: Check filepath." << endl;
+		waitKey();
+		return 0;
+	}
+
+	else if (vCap.get(CAP_PROP_FRAME_COUNT) < 1) {
+		cout << "Error: At least one frame is required" << endl;
+		waitKey();
+		return(0);
+	}
+
+	else {
+		//cout << "Number of frames = " << vCap.get(CAP_PROP_FRAME_COUNT) << endl;
+		//vCap.read(frame);
+		char quit = 0; // Ascii value is 113
+
+		int i = 0;
+		while (vCap.isOpened() && quit != 113) {
+
+			if (quit == 'q') {
+				quit = true;
+				break;
+			}
+
+			else if ((vCap.get(CAP_PROP_POS_FRAMES) + 1) < vCap.get(CAP_PROP_FRAME_COUNT)) {       // continue processing as long as further frames are available
+
+				vCap.read(frame);
+				detectAndDisplay(frame, car_clf);
+				waitKey(100);
+			}
+
+
+		}
+		destroyAllWindows();
+		return 1;
+	}
+}
+
+
+	
+	//vCap.open("../data/dashboardVid.mp4");
+	//cascade = (CvHaarClassifierCascade*);//cvLoad(argv[1], 0, 0, 0);
+	//CvMemStorage* cvCreateMemStorage;
+	//storage = cvCreateMemStorage();
+	
+	//capture = cvCaptureFromAVI(argv[2]);
+
+
+void detectAndDisplay(Mat& frame, CascadeClassifier& car_clf)
+{
+	Mat frame_gray;
+	cvtColor(frame, frame_gray, COLOR_BGR2GRAY);
+	equalizeHist(frame_gray, frame_gray);
+	//-- Detect faces
+	std::vector<Rect> cars;
+	car_clf.detectMultiScale(frame_gray, cars);
+	for (size_t i = 0; i < cars.size(); i++)
+	{
+		Point center(cars[i].x + cars[i].width / 2, cars[i].y + cars[i].height / 2);
+		ellipse(frame, center, Size(cars[i].width / 2, cars[i].height / 2), 0, 0, 360, Scalar(255, 0, 255), 4);
+		
+		
+	}
+	//-- Show what you got
+	imshow("Capture - Car detection", frame);
+}

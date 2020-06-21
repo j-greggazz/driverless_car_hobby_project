@@ -5,34 +5,149 @@
 #include <conio.h>
 #include <stdlib.h>
 #include <direct.h>
+#include <atomic> 
 #include <string>
 //#define _USE_MATH_DEFINES
-
 
 using namespace cv;
 using namespace std;
 
 void setup(LineDetector& ld_, Mat& img);
-int loadVideo(bool multithreading = false);
+int loadVideo(bool multithreading = true);
 void lineDetectionTest() {
 
-
-
 	loadVideo();
-	//Mat img = imread("../data/sample_car.jpg");
-	//setup(ld, img);
-	waitKey();
-
-	//LineDetector::displayImg(ld.configParams.edgeParams.cannyImg, "FINISHED", ld.configParams.edgeParams.screenWidth, ld.configParams.edgeParams.screenHeight, -1);
-	//cout << "here" << endl;
-	//cout << "Canny settings: " << ld.configParams.edgeParams.highThresh << endl;
 }
 
 int loadVideo(bool multithreading) {
 
 	LineDetector ld;
-	if (!multithreading) {
+
+	if (multithreading) {
+
 		//--- INITIALIZE VIDEOCAPTURE
+		Mat frame;
+		VideoCapture vCap;
+		vCap.open("../data/dashboardVid.mp4");
+		bool firstFrame = false;
+
+		// atomic variable to stop threads
+		std::atomic<bool> stop_threading = false;
+
+		if (!vCap.isOpened()) {
+			cout << "Error reading file: Check filepath." << endl;
+			waitKey();
+			return 0;
+		}
+
+		else if (vCap.get(CAP_PROP_FRAME_COUNT) < 1) {
+			cout << "Error: At least one frame is required" << endl;
+			waitKey();
+			return(0);
+		}
+
+		else {
+			//cout << "Number of frames = " << vCap.get(CAP_PROP_FRAME_COUNT) << endl;
+			vCap.read(frame);
+			char quit = 0; 
+
+			int i = 0;
+			const int num_threads = 3;
+
+			vector<LineDetector> lineDetectors; 
+			lineDetectors.resize(num_threads);
+			thread frameThreads[num_threads];
+
+			while (vCap.isOpened() && quit != 113) {
+
+				if (quit == 'q') {
+					for (int i = 0; i < 3; i++) {
+						frameThreads[i].join();
+					}
+					break;
+				}
+				if (firstFrame) {
+					setup(ld, frame);
+					firstFrame = false;
+				}
+
+				else if (i < 3) {
+					vCap.read(frame);
+					lineDetectors[i].configParams.edgeParams.id = i;
+					lineDetectors[i].configParams.edgeParams.currImg = frame;
+					lineDetectors[i].configParams.edgeParams.newImgAvailable = true;
+					lineDetectors[i].configParams.edgeParams.continueProcessing = true;
+					frameThreads[i] = std::thread(LineDetector::processImg_thread, std::ref(lineDetectors[i]), std::ref(stop_threading));
+					i++;
+				}
+
+
+				else if ((vCap.get(CAP_PROP_POS_FRAMES) + 1) < vCap.get(CAP_PROP_FRAME_COUNT)) {       // continue processing as long as further frames are available
+
+					vCap.read(frame);
+
+					if (i % num_threads == 0) {
+						try {
+							if (lineDetectors[0].configParams.edgeParams.linesDrawn == true) {
+								imshow("Sample", lineDetectors[0].configParams.edgeParams.currImg.clone());
+								lineDetectors[0].configParams.edgeParams.linesDrawn == false;
+								//cout << "%3 == 0, frame " << i << endl;
+								lineDetectors[0].configParams.edgeParams.currImg = frame;
+								lineDetectors[0].configParams.edgeParams.newImgAvailable = true;
+							}
+						}
+						catch (cv::Exception& e) {
+							int val = 0;
+						}
+					}
+
+
+					if (i % num_threads == 1) {
+						try {
+							if (lineDetectors[1].configParams.edgeParams.linesDrawn == true) {
+								imshow("Sample", lineDetectors[1].configParams.edgeParams.currImg.clone());
+								lineDetectors[1].configParams.edgeParams.linesDrawn == false;
+								//cout << "%3 == 1, frame " << i << endl;
+								lineDetectors[1].configParams.edgeParams.currImg = frame;
+								lineDetectors[1].configParams.edgeParams.newImgAvailable = true;
+							}
+						}
+						catch (cv::Exception& e) {
+							int val = 0;
+						}
+					
+					}
+
+					if (i % num_threads == 2) {
+						try {
+							if (lineDetectors[2].configParams.edgeParams.linesDrawn == true) {
+								imshow("Sample", lineDetectors[2].configParams.edgeParams.currImg.clone());
+								lineDetectors[2].configParams.edgeParams.linesDrawn == false;
+								//cout << "%3 == 2, frame " << i << endl;
+								lineDetectors[2].configParams.edgeParams.currImg = frame;
+								lineDetectors[2].configParams.edgeParams.newImgAvailable = true;
+							}
+						}
+						catch (cv::Exception& e) {
+							int val = 0;
+						}					
+					}
+					i++;
+					quit = waitKey(10);
+				}
+			}
+			if (quit == 'q') {
+				stop_threading = true;
+				for (int i = 0; i < 3; i++) {
+					frameThreads[i].join();
+				}
+			}
+			destroyWindow("Sample");
+			return 1;
+		}
+	}
+
+	else {
 		Mat frame;
 		VideoCapture vCap;
 		vCap.open("../data/dashboardVid.mp4");
@@ -56,91 +171,107 @@ int loadVideo(bool multithreading) {
 			char quit = 0; // Ascii value is 113
 
 			int i = 0;
-			const int num_threads = 3;
-
-			vector<LineDetector> lineDetectors; // (num_threads, ld);
-			lineDetectors.resize(num_threads);
-			thread frameThreads[num_threads];
-
 			while (vCap.isOpened() && quit != 113) {
 
 				if (quit == 'q') {
-					for (int i = 0; i < 3; i++) {
-						frameThreads[i].join();
-					}
+					quit = true;
 					break;
 				}
 				if (firstFrame) {
 					setup(ld, frame);
 					firstFrame = false;
-					//frameThreads[i] = thread(processImg_thread, std::ref(lineDetectors[i]), std::ref(cc), std::ref(quit));//, weldpoints_unedited); THIS IS NOT A FUNCTION CALL. THIS IS A CONSTRUCTOR - THEREFORE HAVE TO EXPLAIN WHICH ARGUMENTS ARE BOUND!
 				}
-
-				else if (i < 3) {
-					vCap.read(frame);
-					LineDetector ld = lineDetectors[i];
-					ld.configParams.edgeParams.id = i;
-					ld.configParams.edgeParams.currImg = frame;
-					ld.configParams.edgeParams.newImgAvailable = true;
-					ld.configParams.edgeParams.continueProcessing = true;
-					frameThreads[i] = std::thread(LineDetector::processImg_thread, std::ref(ld));
-					i++;
-				}
-
 
 				else if ((vCap.get(CAP_PROP_POS_FRAMES) + 1) < vCap.get(CAP_PROP_FRAME_COUNT)) {       // continue processing as long as further frames are available
 
 					vCap.read(frame);
 
-					if (i % num_threads == 0) {
-						try {
-							imshow("Sample0", lineDetectors[0].configParams.edgeParams.currImg.clone());
-						}
-						catch (cv::Exception& e) {
-							int val = 0;
-						}
-						cout << "%3 == 0, frame " << i << endl;
-						lineDetectors[0].configParams.edgeParams.currImg = frame;
-						lineDetectors[0].configParams.edgeParams.newImgAvailable = true;
-					}
+					ld.configParams.edgeParams.currImg = frame;
+
+					ld.processImg();
+
+					imshow("Sample", frame);
+
+					quit = waitKey(10);
+
+					/*auto start = std::chrono::high_resolution_clock::now();
+					vCap.read(frame);
+					auto finish = std::chrono::high_resolution_clock::now();
+					std::chrono::duration<double> elapsed = finish - start;
+					cout << "Time taken to read frame = " << elapsed.count() << endl;
+
+					ld.configParams.edgeParams.currImg = frame;
+					start = std::chrono::high_resolution_clock::now();
+					ld.processImg();
+					finish = std::chrono::high_resolution_clock::now();
+					elapsed = finish - start;
+					cout << "Time taken for image processing = " << elapsed.count() << endl;
+					start = std::chrono::high_resolution_clock::now();
+					imshow("Sample", frame);
+					finish = std::chrono::high_resolution_clock::now();
+					elapsed = finish - start;
+					cout << "Time taken for imshow = " << elapsed.count() << endl;
+					waitKey(100);*/
+				}
 
 
-					if (i % num_threads == 1) {
-						try {
-							imshow("Sample1", lineDetectors[1].configParams.edgeParams.currImg.clone());
-						}
-						catch (cv::Exception& e) {
-							int val = 0;
-						}
-						cout << "%3 == 1, frame " << i << endl;
-						lineDetectors[1].configParams.edgeParams.currImg = frame;
-						lineDetectors[1].configParams.edgeParams.newImgAvailable = true;
-					}
+			}
+			destroyWindow("Sample");
+			return 1;
+		}
+	}
 
-					if (i % num_threads == 2) {
-						try {
-							imshow("Sample2", lineDetectors[2].configParams.edgeParams.currImg.clone());
-						}
-						catch (cv::Exception& e) {
-							int val = 0;
-						}
-						cout << "%3 == 2, frame " << i << endl;
-						lineDetectors[2].configParams.edgeParams.currImg = frame;
-						lineDetectors[2].configParams.edgeParams.newImgAvailable = true;
-					}
+}
 
-					i++;
+int loadVideo_(bool multithreading) {
+
+	LineDetector ld;
+	if (!multithreading) {
+		//--- INITIALIZE VIDEOCAPTURE
+		Mat frame;
+		VideoCapture vCap;
+		vCap.open("../data/dashboardVid.mp4");
+		bool firstFrame = true;
+
+		if (!vCap.isOpened()) {
+			cout << "Error reading file: Check filepath." << endl;
+			waitKey();
+			return 0;
+		}
+
+		else if (vCap.get(CAP_PROP_FRAME_COUNT) < 1) {
+			cout << "Error: At least one frame is required" << endl;
+			waitKey();
+			return(0);
+		}
+
+		else {
+			//cout << "Number of frames = " << vCap.get(CAP_PROP_FRAME_COUNT) << endl;
+			vCap.read(frame);
+			char quit = 0; // Ascii value is 113
+
+			int i = 0;
+			while (vCap.isOpened() && quit != 113) {
+
+				if (quit == 'q') {
+					quit = true;
+					break;
+				}
+				if (firstFrame) {
+					setup(ld, frame);
+					firstFrame = false;
+				}
+
+				else if ((vCap.get(CAP_PROP_POS_FRAMES) + 1) < vCap.get(CAP_PROP_FRAME_COUNT)) {       // continue processing as long as further frames are available
+
+					vCap.read(frame);
 
 
+					ld.configParams.edgeParams.currImg = frame;
 
+					ld.processImg();
 
-
-
-					//ld.configParams.edgeParams.currImg = frame;
-
-					//ld.processImg();
-
-					//imshow("Sample", frame);
+					imshow("Sample", frame);
 
 					quit = waitKey(100);
 
@@ -166,13 +297,7 @@ int loadVideo(bool multithreading) {
 
 
 			}
-			if (quit != 'q') {
-				for (int i = 0; i < 3; i++) {
-					frameThreads[i].join();
-				}
-			}
 			destroyWindow("Sample");
-
 			return 1;
 		}
 	}

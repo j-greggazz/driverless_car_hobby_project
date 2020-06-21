@@ -7,6 +7,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/video.hpp>
+#include <atomic>
 #include <vector>
 #include <iostream>
 //#include <string.h>
@@ -21,7 +22,13 @@ public:
 
 	struct EdgeConfig {
 		
+		// Multithreading variables
 		int id = 0;
+		bool continueProcessing = true;
+		bool newImgAvailable = false;
+		bool linesDrawn = false;
+
+
 		// Window Properties
 		const std::string blurThreshWindowName = "1. Blur & Thresholding";
 		const std::string roiBoxWindowName = "1. Set Roi-Box";
@@ -93,11 +100,6 @@ public:
 		int minDistBtwCenters = 10;
 		int dp = 2; // Inverse ratio of the accumulator resolution to the image resolution
 
-
-		// Multithreading control
-		bool continueProcessing = true;
-		bool newImgAvailable = false;
-
 	};
 
 	struct ConfigParams {
@@ -144,7 +146,7 @@ public:
 	//static void calcImgDims(EdgeConfig * edgeParams, cv::Mat & img);
 	static void PrintFullPath(char * partialPath);
 	static void func();
-	static void processImg_thread(LineDetector& ld);
+	static void processImg_thread(LineDetector& ld, std::atomic<bool>& stopThreads);
 
 	
 

@@ -632,7 +632,7 @@ void LineDetector::drawCircles(EdgeConfig* edgeParams, cv::Mat& img, const std::
 
 /* -------------------- Multithreading -------------------- */
 
-void LineDetector::processImg_thread(LineDetector& ld) {
+void LineDetector::processImg_thread(LineDetector& ld, atomic<bool>& stopThreads) {
 
 	int cannyKernelSize = ld.configParams.edgeParams.cannyKernel + 3;
 	cv::Mat cannyImg;
@@ -640,7 +640,9 @@ void LineDetector::processImg_thread(LineDetector& ld) {
 	while (ld.configParams.edgeParams.continueProcessing) {
 
 		if (ld.configParams.edgeParams.newImgAvailable) {
+			ld.configParams.edgeParams.linesDrawn = false;
 			Mat roi_img = ld.configParams.edgeParams.currImg(ld.configParams.edgeParams.roi_Bbox);
+			Mat curr_img_copy = ld.configParams.edgeParams.currImg.clone();
 			// 1. Blur 
 			// Blur:
 			if (ld.configParams.edgeParams.gauss_ksize > 0) {
@@ -708,13 +710,19 @@ void LineDetector::processImg_thread(LineDetector& ld) {
 			}
 			ld.configParams.edgeParams.edgeLines = lines;
 			bool laneDetect = true;
-			drawLines(&ld.configParams.edgeParams, &ld.configParams.edgeParams.currImg, lines, laneDetect);
-
+			
+			drawLines(&ld.configParams.edgeParams, curr_img_copy, lines, laneDetect);
+			//drawLines(&ld.configParams.edgeParams, ld.configParams.edgeParams.currImg, lines, laneDetect);
+			ld.configParams.edgeParams.currImg = curr_img_copy;
+			ld.configParams.edgeParams.linesDrawn = true;
 			// 5. Confirm image_i processed
 			ld.configParams.edgeParams.newImgAvailable = false;
 		}
 		else {
 			this_thread::sleep_for(chrono::milliseconds(10));
+		}
+		if (stopThreads) {
+			return;
 		}
 	}
 }

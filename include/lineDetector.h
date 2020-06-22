@@ -8,6 +8,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/video.hpp>
 #include <opencv2/opencv.hpp>
+#include <opencv2/core/utils/trace.hpp>
 
 #include <atomic>
 #include <vector>

@@ -391,9 +391,56 @@ void LineDetector::processImg() {
 	detectLanes();
 }
 
-void LineDetector::trackCars(){
+void LineDetector::trackCars(LineDetector& ld, dnn::Net& net) {
 
+	string CLASSES[] = { "background", "aeroplane", "bicycle", "bird", "boat",
+	"bottle", "bus", "car", "cat", "chair", "cow", "diningtable",
+	"dog", "horse", "motorbike", "person", "pottedplant", "sheep",
+	"sofa", "train", "tvmonitor" };
 
+	Mat img = ld.configParams.edgeParams.currImg(ld.configParams.edgeParams.roi_Box_car);
+	Mat img2;
+	resize(img, img2, Size(300, 300));
+	Mat inputBlob = dnn::blobFromImage(img2, 0.007843, Size(300, 300), Scalar(127.5, 127.5, 127.5), false);  // 1. Mean subtraction is used to help combat illumination changes in the input images in our dataset
+																										// 2. Scaling 
+	net.setInput(inputBlob, "data");
+	Mat detection = net.forward("detection_out");
+	Mat detectionMat(detection.size[2], detection.size[3], CV_32F, detection.ptr<float>());
+
+	ostringstream ss;
+	float confidenceThreshold = 0.2;
+	for (int i = 0; i < detectionMat.rows; i++){
+		float confidence = detectionMat.at<float>(i, 2);
+
+		if (confidence > confidenceThreshold)
+		{
+			int idx = static_cast<int>(detectionMat.at<float>(i, 1));
+			if (CLASSES[idx] == "car" | CLASSES[idx] == "bus") {
+				int xLeftBottom = static_cast<int>(detectionMat.at<float>(i, 3) * img.cols);
+				int yLeftBottom = static_cast<int>(detectionMat.at<float>(i, 4) * img.rows);
+				int xRightTop = static_cast<int>(detectionMat.at<float>(i, 5) * img.cols);
+				int yRightTop = static_cast<int>(detectionMat.at<float>(i, 6) * img.rows);
+
+				Rect object((int)xLeftBottom, (int)yLeftBottom,
+					(int)(xRightTop - xLeftBottom),
+					(int)(yRightTop - yLeftBottom));
+
+				rectangle(img, object, Scalar(255, 0, 0), 2);
+
+				cout << CLASSES[idx] << ": " << confidence << endl;
+
+				ss.str("");
+				ss << confidence;
+				String conf(ss.str());
+				String label = CLASSES[idx] + ": " + conf;
+				int baseLine = 0;
+				Size labelSize = getTextSize(label, FONT_HERSHEY_SIMPLEX, 0.5, 1, &baseLine);
+				putText(img, label, Point(xLeftBottom, yLeftBottom), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 0, 0));
+			}
+		}
+	}
+	ld.configParams.edgeParams.detectionComplete = true;
+		//imshow("detections", img);
 }
 
 void LineDetector::detectLanes() {
@@ -467,7 +514,89 @@ void LineDetector::detectLanes() {
 	drawLines(&this->configParams.edgeParams, this->configParams.edgeParams.currImg, lines, laneDetect);
 }
 
+void LineDetector::detectLanes(LineDetector& ld) {
 
+	int cannyKernelSize = ld.configParams.edgeParams.cannyKernel + 3;
+	cv::Mat cannyImg;
+	ld.configParams.edgeParams.linesDrawn = false;
+	Mat roi_img = ld.configParams.edgeParams.currImg(ld.configParams.edgeParams.roi_Bbox);
+	Mat curr_img_copy = ld.configParams.edgeParams.currImg.clone();
+	// 1. Blur 
+	// Blur:
+	if (ld.configParams.edgeParams.gauss_ksize > 0) {
+		cvtColor(roi_img, cannyImg, COLOR_BGR2GRAY);
+		blur(cannyImg, cannyImg, Size(ld.configParams.edgeParams.gauss_ksize, ld.configParams.edgeParams.gauss_ksize), Point(-1, -1));
+	}
+	// 2. Canny Edge Detection:
+	if (!cannyImg.empty()) {
+		Canny(cannyImg, cannyImg, ld.configParams.edgeParams.lowThresh, ld.configParams.edgeParams.highThresh, cannyKernelSize);
+		ld.configParams.edgeParams.cannyImg = cannyImg.clone();
+	}
+
+	// 3. Morphological operations
+	int operation = ld.configParams.edgeParams.morphTransformType + 1;
+	Mat morphImg = cannyImg;
+
+	// Morphological Operations A:
+	if (operation > 3) {
+		Mat str_element = getStructuringElement(ld.configParams.edgeParams.morph_elem_shape, Size(2 * ld.configParams.edgeParams.kernel_morph_size + 1, 2 * ld.configParams.edgeParams.kernel_morph_size + 1), Point(ld.configParams.edgeParams.kernel_morph_size, ld.configParams.edgeParams.kernel_morph_size));
+		operation -= 2;
+		morphologyEx(morphImg, morphImg, operation, str_element);
+	}
+	else if (operation == 1) {
+		Mat element = getStructuringElement(MORPH_CROSS, Size(ld.configParams.edgeParams.kernel_morph_size + 1, ld.configParams.edgeParams.kernel_morph_size + 1));//, Point(edgeConfig->kernel_morph_size, edgeConfig->kernel_morph_size));
+		erode(morphImg, morphImg, element, Point(-1, -1), 2, 1, 1);
+	}
+
+	else if (operation == 2) {
+		Mat element = getStructuringElement(MORPH_RECT, Size(ld.configParams.edgeParams.kernel_morph_size + 1, ld.configParams.edgeParams.kernel_morph_size + 1), Point(ld.configParams.edgeParams.kernel_morph_size, ld.configParams.edgeParams.kernel_morph_size));
+		dilate(morphImg, morphImg, element);
+	}
+
+	// Morphological Operations B:
+	operation = ld.configParams.edgeParams.morphTransformType_ + 1;
+
+	if (operation > 3) {
+		Mat str_element = getStructuringElement(ld.configParams.edgeParams.morph_elem_shape, Size(2 * ld.configParams.edgeParams.kernel_morph_size_ + 1, 2 * ld.configParams.edgeParams.kernel_morph_size_ + 1), Point(ld.configParams.edgeParams.kernel_morph_size_, ld.configParams.edgeParams.kernel_morph_size_));
+		operation -= 2;
+		morphologyEx(morphImg, morphImg, operation, str_element);
+	}
+	else if (operation == 1) {
+		Mat element = getStructuringElement(MORPH_CROSS, Size(ld.configParams.edgeParams.kernel_morph_size_ + 1, ld.configParams.edgeParams.kernel_morph_size_ + 1));//, Point(edgeConfig->kernel_morph_size, edgeConfig->kernel_morph_size));
+		erode(morphImg, morphImg, element, Point(-1, -1), 2, 1, 1);
+	}
+
+	else if (operation == 2) {
+		Mat element = getStructuringElement(MORPH_RECT, Size(ld.configParams.edgeParams.kernel_morph_size_ + 1, ld.configParams.edgeParams.kernel_morph_size_ + 1), Point(ld.configParams.edgeParams.kernel_morph_size_, ld.configParams.edgeParams.kernel_morph_size_));
+		dilate(morphImg, morphImg, element);
+	}
+
+	if (morphImg.empty()) {
+		morphImg = ld.configParams.edgeParams.origImg;
+	}
+
+	ld.configParams.edgeParams.morphImg2 = morphImg;
+	Mat houghImg = ld.configParams.edgeParams.morphImg2.clone();
+
+	// 4. Determine hough lines:
+	vector<Vec4i> lines;
+	try {
+		cv::HoughLinesP(houghImg, lines, 1, CV_PI / 180, ld.configParams.edgeParams.minVotes, ld.configParams.edgeParams.minLineLength, ld.configParams.edgeParams.maxLineGap);
+	}
+	catch (cv::Exception& e) {
+		int val = 0;
+	}
+	ld.configParams.edgeParams.edgeLines = lines;
+	bool laneDetect = true;
+
+	drawLines(&ld.configParams.edgeParams, curr_img_copy, lines, laneDetect);
+	//drawLines(&ld.configParams.edgeParams, ld.configParams.edgeParams.currImg, lines, laneDetect);
+	ld.configParams.edgeParams.currImg = curr_img_copy;
+	ld.configParams.edgeParams.linesDrawn = true;
+	// 5. Confirm image_i processed
+	ld.configParams.edgeParams.newImgAvailable = false;
+}
+;
 
 /* -------------------- Helper functions --------------------*/
 void LineDetector::displayImg(Mat img, const std::string title, int screenWidth, int screenHeight, int img_num) {
@@ -687,92 +816,18 @@ void LineDetector::drawCircles(EdgeConfig* edgeParams, cv::Mat& img, const std::
 
 /* -------------------- Multithreading -------------------- */
 
-void LineDetector::processImg_thread(LineDetector& ld, atomic<bool>& stopThreads) {
+void LineDetector::processImg_thread(LineDetector& ld, atomic<bool>& stopThreads, dnn::Net& net) {
 
-	int cannyKernelSize = ld.configParams.edgeParams.cannyKernel + 3;
-	cv::Mat cannyImg;
+	
 
 	while (ld.configParams.edgeParams.continueProcessing) {
 
 		if (ld.configParams.edgeParams.newImgAvailable) {
-			ld.configParams.edgeParams.linesDrawn = false;
-			Mat roi_img = ld.configParams.edgeParams.currImg(ld.configParams.edgeParams.roi_Bbox);
-			Mat curr_img_copy = ld.configParams.edgeParams.currImg.clone();
-			// 1. Blur 
-			// Blur:
-			if (ld.configParams.edgeParams.gauss_ksize > 0) {
-				cvtColor(roi_img, cannyImg, COLOR_BGR2GRAY);
-				blur(cannyImg, cannyImg, Size(ld.configParams.edgeParams.gauss_ksize, ld.configParams.edgeParams.gauss_ksize), Point(-1, -1));
-			}
-			// 2. Canny Edge Detection:
-			if (!cannyImg.empty()) {
-				Canny(cannyImg, cannyImg, ld.configParams.edgeParams.lowThresh, ld.configParams.edgeParams.highThresh, cannyKernelSize);
-				ld.configParams.edgeParams.cannyImg = cannyImg.clone();
-			}
-
-			// 3. Morphological operations
-			int operation = ld.configParams.edgeParams.morphTransformType + 1;
-			Mat morphImg = cannyImg;
-
-			// Morphological Operations A:
-			if (operation > 3) {
-				Mat str_element = getStructuringElement(ld.configParams.edgeParams.morph_elem_shape, Size(2 * ld.configParams.edgeParams.kernel_morph_size + 1, 2 * ld.configParams.edgeParams.kernel_morph_size + 1), Point(ld.configParams.edgeParams.kernel_morph_size, ld.configParams.edgeParams.kernel_morph_size));
-				operation -= 2;
-				morphologyEx(morphImg, morphImg, operation, str_element);
-			}
-			else if (operation == 1) {
-				Mat element = getStructuringElement(MORPH_CROSS, Size(ld.configParams.edgeParams.kernel_morph_size + 1, ld.configParams.edgeParams.kernel_morph_size + 1));//, Point(edgeConfig->kernel_morph_size, edgeConfig->kernel_morph_size));
-				erode(morphImg, morphImg, element, Point(-1, -1), 2, 1, 1);
-			}
-
-			else if (operation == 2) {
-				Mat element = getStructuringElement(MORPH_RECT, Size(ld.configParams.edgeParams.kernel_morph_size + 1, ld.configParams.edgeParams.kernel_morph_size + 1), Point(ld.configParams.edgeParams.kernel_morph_size, ld.configParams.edgeParams.kernel_morph_size));
-				dilate(morphImg, morphImg, element);
-			}
-
-			// Morphological Operations B:
-			operation = ld.configParams.edgeParams.morphTransformType_ + 1;
-
-			if (operation > 3) {
-				Mat str_element = getStructuringElement(ld.configParams.edgeParams.morph_elem_shape, Size(2 * ld.configParams.edgeParams.kernel_morph_size_ + 1, 2 * ld.configParams.edgeParams.kernel_morph_size_ + 1), Point(ld.configParams.edgeParams.kernel_morph_size_, ld.configParams.edgeParams.kernel_morph_size_));
-				operation -= 2;
-				morphologyEx(morphImg, morphImg, operation, str_element);
-			}
-			else if (operation == 1) {
-				Mat element = getStructuringElement(MORPH_CROSS, Size(ld.configParams.edgeParams.kernel_morph_size_ + 1, ld.configParams.edgeParams.kernel_morph_size_ + 1));//, Point(edgeConfig->kernel_morph_size, edgeConfig->kernel_morph_size));
-				erode(morphImg, morphImg, element, Point(-1, -1), 2, 1, 1);
-			}
-
-			else if (operation == 2) {
-				Mat element = getStructuringElement(MORPH_RECT, Size(ld.configParams.edgeParams.kernel_morph_size_ + 1, ld.configParams.edgeParams.kernel_morph_size_ + 1), Point(ld.configParams.edgeParams.kernel_morph_size_, ld.configParams.edgeParams.kernel_morph_size_));
-				dilate(morphImg, morphImg, element);
-			}
-
-			if (morphImg.empty()) {
-				morphImg = ld.configParams.edgeParams.origImg;
-			}
-
-			ld.configParams.edgeParams.morphImg2 = morphImg;
-			Mat houghImg = ld.configParams.edgeParams.morphImg2.clone();
-
-			// 4. Determine hough lines:
-			vector<Vec4i> lines;
-			try {
-				cv::HoughLinesP(houghImg, lines, 1, CV_PI / 180, ld.configParams.edgeParams.minVotes, ld.configParams.edgeParams.minLineLength, ld.configParams.edgeParams.maxLineGap);
-			}
-			catch (cv::Exception& e) {
-				int val = 0;
-			}
-			ld.configParams.edgeParams.edgeLines = lines;
-			bool laneDetect = true;
+			trackCars(ld, net);
+			detectLanes(ld);
 			
-			drawLines(&ld.configParams.edgeParams, curr_img_copy, lines, laneDetect);
-			//drawLines(&ld.configParams.edgeParams, ld.configParams.edgeParams.currImg, lines, laneDetect);
-			ld.configParams.edgeParams.currImg = curr_img_copy;
-			ld.configParams.edgeParams.linesDrawn = true;
-			// 5. Confirm image_i processed
-			ld.configParams.edgeParams.newImgAvailable = false;
 		}
+
 		else {
 			this_thread::sleep_for(chrono::milliseconds(10));
 		}

@@ -29,7 +29,8 @@ public:
 		int id = 0;
 		bool continueProcessing = true;
 		bool newImgAvailable = false;
-		bool linesDrawn = false;
+		bool linesDrawn = true;
+		bool detectionComplete = true;
 
 
 		// Window Properties
@@ -150,8 +151,10 @@ public:
 	/* -------------------- Processing --------------------*/
 	void Pipeline();
 	void processImg();
-	void trackCars();
 	void detectLanes();
+	static void trackCars(LineDetector& ld, cv::dnn::Net& net);
+	
+	static void detectLanes(LineDetector& ld);
 
 	/* -------------------- Helper functions --------------------*/
 	static void displayImg(cv::Mat Img, const std::string title, int screenWidth, int screenHeight, int imgNum);
@@ -160,7 +163,7 @@ public:
 	//static void calcImgDims(EdgeConfig * edgeParams, cv::Mat & img);
 	static void PrintFullPath(char * partialPath);
 	static void func();
-	static void processImg_thread(LineDetector& ld, std::atomic<bool>& stopThreads);
+	static void processImg_thread(LineDetector& ld, std::atomic<bool>& stopThreads, cv::dnn::Net& net);
 
 	
 

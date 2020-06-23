@@ -5,8 +5,7 @@
 #include <conio.h>
 #include <stdlib.h>
 #include <direct.h>
-#include <atomic> 
-#include <string>
+
 //#define _USE_MATH_DEFINES
 
 using namespace cv;
@@ -21,7 +20,7 @@ void detectAndDisplay_cascade_clf(Mat& frame, CascadeClassifier& car_clf);
 int trackCars_mobileNet();
 void lineDetectionTest() {
 	//LineDetector::PrintFullPath(".\\");
-	loadVideo(false);
+	loadVideo();
 	//trackCars_haar_clf();
 
 	//trackCars_mobileNet();
@@ -61,11 +60,17 @@ int loadVideo(bool multithreading) {
 
 			int i = 0;
 			const int num_threads = 3;
-
 			vector<LineDetector> lineDetectors; 
-			lineDetectors.resize(num_threads);
+			lineDetectors.resize(num_threads); 
+			vector<Net> mobileNets;
+			mobileNets.resize(num_threads);
 			thread frameThreads[num_threads];
-
+			int detectorDisplayed = 0;
+			//bool frameProcessed = true;
+			int frameCount = 0;
+			int processedFrames = 0;
+			int noFrame = 10800;//15000;
+			bool success = vCap.set(CAP_PROP_POS_FRAMES, noFrame);
 			while (vCap.isOpened() && quit != 113) {
 
 				if (quit == 'q') {
@@ -74,6 +79,7 @@ int loadVideo(bool multithreading) {
 					}
 					break;
 				}
+				
 				if (firstFrame) {
 					setup(ld, frame);
 					firstFrame = false;
@@ -85,23 +91,46 @@ int loadVideo(bool multithreading) {
 					lineDetectors[i].configParams.edgeParams.currImg = frame;
 					lineDetectors[i].configParams.edgeParams.newImgAvailable = true;
 					lineDetectors[i].configParams.edgeParams.continueProcessing = true;
-					frameThreads[i] = std::thread(LineDetector::processImg_thread, std::ref(lineDetectors[i]), std::ref(stop_threading));
+					CV_TRACE_FUNCTION();
+					String modelTxt = "../models/MobileNetSSD_deploy.prototxt.txt";
+					String modelBin = "../models/MobileNetSSD_deploy.caffemodel";
+					Net net;
+
+					try {
+						mobileNets[i] = dnn::readNetFromCaffe(modelTxt, modelBin);
+
+						cerr << "loaded successfully" << endl;
+					}
+					catch (cv::Exception& e)
+					{
+						std::cerr << "Exception: " << e.what() << std::endl;
+
+					}
+
+					frameThreads[i] = std::thread(LineDetector::processImg_thread, std::ref(lineDetectors[i]), std::ref(stop_threading), std::ref(mobileNets[i]));
 					i++;
 				}
 
-
 				else if ((vCap.get(CAP_PROP_POS_FRAMES) + 1) < vCap.get(CAP_PROP_FRAME_COUNT)) {       // continue processing as long as further frames are available
-
-					vCap.read(frame);
+					//frameProcessed = false;
+					if (processedFrames == frameCount){
+						vCap.read(frame);
+						frameCount++;
+					}
+					
+					
 
 					if (i % num_threads == 0) {
 						try {
-							if (lineDetectors[0].configParams.edgeParams.linesDrawn == true) {
+							if (lineDetectors[0].configParams.edgeParams.linesDrawn == true & lineDetectors[0].configParams.edgeParams.detectionComplete == true & detectorDisplayed == 0) {
 								imshow("Sample", lineDetectors[0].configParams.edgeParams.currImg.clone());
+								lineDetectors[0].configParams.edgeParams.detectionComplete == false;
 								lineDetectors[0].configParams.edgeParams.linesDrawn == false;
-								//cout << "%3 == 0, frame " << i << endl;
+								cout << "%3 == 0, frame " << i << endl;
 								lineDetectors[0].configParams.edgeParams.currImg = frame;
 								lineDetectors[0].configParams.edgeParams.newImgAvailable = true;
+								detectorDisplayed = 1;	
+								processedFrames++;
 							}
 						}
 						catch (cv::Exception& e) {
@@ -109,15 +138,17 @@ int loadVideo(bool multithreading) {
 						}
 					}
 
-
 					if (i % num_threads == 1) {
 						try {
-							if (lineDetectors[1].configParams.edgeParams.linesDrawn == true) {
+							if (lineDetectors[1].configParams.edgeParams.linesDrawn == true & lineDetectors[1].configParams.edgeParams.detectionComplete == true & detectorDisplayed == 1) {
 								imshow("Sample", lineDetectors[1].configParams.edgeParams.currImg.clone());
 								lineDetectors[1].configParams.edgeParams.linesDrawn == false;
-								//cout << "%3 == 1, frame " << i << endl;
+								lineDetectors[1].configParams.edgeParams.detectionComplete == false;
+								cout << "%3 == 1, frame " << i << endl;
 								lineDetectors[1].configParams.edgeParams.currImg = frame;
 								lineDetectors[1].configParams.edgeParams.newImgAvailable = true;
+								detectorDisplayed = 2;		
+								processedFrames++;
 							}
 						}
 						catch (cv::Exception& e) {
@@ -128,22 +159,27 @@ int loadVideo(bool multithreading) {
 
 					if (i % num_threads == 2) {
 						try {
-							if (lineDetectors[2].configParams.edgeParams.linesDrawn == true) {
+							if (lineDetectors[2].configParams.edgeParams.linesDrawn == true & lineDetectors[2].configParams.edgeParams.detectionComplete == true & detectorDisplayed == 2) {
 								imshow("Sample", lineDetectors[2].configParams.edgeParams.currImg.clone());
 								lineDetectors[2].configParams.edgeParams.linesDrawn == false;
-								//cout << "%3 == 2, frame " << i << endl;
+								lineDetectors[2].configParams.edgeParams.detectionComplete == false;
+								cout << "%3 == 2, frame " << i << endl;
 								lineDetectors[2].configParams.edgeParams.currImg = frame;
 								lineDetectors[2].configParams.edgeParams.newImgAvailable = true;
+								detectorDisplayed = 0;
+								processedFrames++;
 							}
 						}
 						catch (cv::Exception& e) {
 							int val = 0;
 						}					
 					}
+					
 					i++;
-					quit = waitKey(10);
+					quit = waitKey(100);
 				}
 			}
+
 			if (quit == 'q') {
 				stop_threading = true;
 				for (int i = 0; i < 3; i++) {
@@ -182,7 +218,8 @@ int loadVideo(bool multithreading) {
 
 
 		bool firstFrame = false;
-
+		int noFrame = 10000;
+		bool success = vCap.set(CAP_PROP_POS_FRAMES, noFrame);
 		if (!vCap.isOpened()) {
 			cout << "Error reading file: Check filepath." << endl;
 			waitKey();
@@ -302,7 +339,6 @@ int loadVideo(bool multithreading) {
 	}
 
 }
-
 
 void setup(LineDetector& ld_, Mat& img) {
 
@@ -593,7 +629,6 @@ int trackCars_mobileNet() {
 	}
 	return 1;
 }
-
 
 void detectAndDisplay_cascade_clf(Mat& frame, CascadeClassifier& car_clf)
 {

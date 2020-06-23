@@ -24,7 +24,7 @@ void LineDetector::houghCParameters() {
 
 	waitKey();
 	destroyAllWindows();
-	destroyWindow(this->configParams.edgeParams.houghCWindowName);
+	//destroyWindow(this->configParams.edgeParams.houghCWindowName);
 };
 void LineDetector::houghC_Callback(int, void *userdata) {
 
@@ -62,7 +62,7 @@ void LineDetector::houghLParametersP() {
 	houghCParameters();
 	waitKey();
 	destroyAllWindows();
-	destroyWindow(this->configParams.edgeParams.houghWindowName);
+	//destroyWindow(this->configParams.edgeParams.houghWindowName);
 };
 void LineDetector::houghLPCallback(int, void *userdata) {
 
@@ -101,7 +101,7 @@ void LineDetector::morphParametersP2() {
 	houghLParametersP();
 	waitKey();
 	destroyAllWindows();
-	destroyWindow(this->configParams.edgeParams.morphWindowName2);
+	//destroyWindow(this->configParams.edgeParams.morphWindowName2);
 }
 void LineDetector::morphCallback2(int, void *userdata) {
 	EdgeConfig *edgeConfig = reinterpret_cast<EdgeConfig *>(userdata);
@@ -155,7 +155,7 @@ void LineDetector::morphParametersP() {
 	morphParametersP2();
 	waitKey();
 	destroyAllWindows();
-	destroyWindow(this->configParams.edgeParams.morphWindowName);
+	//destroyWindow(this->configParams.edgeParams.morphWindowName);
 }
 void LineDetector::morphCallback(int, void *userdata) {
 	EdgeConfig *edgeConfig = reinterpret_cast<EdgeConfig *>(userdata);
@@ -210,7 +210,7 @@ void LineDetector::edgeParametersP() {
 	morphParametersP();
 	waitKey();
 	destroyAllWindows();
-	destroyWindow(this->configParams.edgeParams.edgeWindowName);
+	//destroyWindow(this->configParams.edgeParams.edgeWindowName);
 };
 void LineDetector::edgeDetectCallback(int, void *userdata) {
 	EdgeConfig *edgeConfig = reinterpret_cast<EdgeConfig *>(userdata);
@@ -289,24 +289,24 @@ void LineDetector::blurThreshCallback(int, void *userdata) {
 	edgeDetectCallback(0, edgeConfig);
 }
 
-void LineDetector::setROI_Box() {
+void LineDetector::setLane_ROIBox() {
 	namedWindow(this->configParams.edgeParams.roiBoxWindowName, WINDOW_AUTOSIZE);
 	resizeWindow(this->configParams.edgeParams.roiBoxWindowName, int(configParams.edgeParams.newCols), int(configParams.edgeParams.newRows));
 	moveWindow(this->configParams.edgeParams.roiBoxWindowName, 0, 0);
 	size_t max_val_x = this->configParams.edgeParams.origImg.cols;
 	size_t max_val_y = this->configParams.edgeParams.origImg.rows;
 
-	createTrackbar("X1-Pos", this->configParams.edgeParams.roiBoxWindowName, &this->configParams.edgeParams.x1_roi, max_val_x, roiCallback, &this->configParams.edgeParams);
-	createTrackbar("RecWidth", this->configParams.edgeParams.roiBoxWindowName, &this->configParams.edgeParams.recWidth, max_val_x, roiCallback, &this->configParams.edgeParams);
-	createTrackbar("Y1-Pos", this->configParams.edgeParams.roiBoxWindowName, &this->configParams.edgeParams.y1_roi, max_val_y, roiCallback, &this->configParams.edgeParams);
-	createTrackbar("RecHeight", this->configParams.edgeParams.roiBoxWindowName, &this->configParams.edgeParams.recHeight, max_val_y, roiCallback, &this->configParams.edgeParams);
+	createTrackbar("X1-Pos", this->configParams.edgeParams.roiBoxWindowName, &this->configParams.edgeParams.x1_roi, max_val_x, roiLaneCallback, &this->configParams.edgeParams);
+	createTrackbar("RecWidth", this->configParams.edgeParams.roiBoxWindowName, &this->configParams.edgeParams.recWidth, max_val_x, roiLaneCallback, &this->configParams.edgeParams);
+	createTrackbar("Y1-Pos", this->configParams.edgeParams.roiBoxWindowName, &this->configParams.edgeParams.y1_roi, max_val_y, roiLaneCallback, &this->configParams.edgeParams);
+	createTrackbar("RecHeight", this->configParams.edgeParams.roiBoxWindowName, &this->configParams.edgeParams.recHeight, max_val_y, roiLaneCallback, &this->configParams.edgeParams);
 
 	edgeParametersP();
 	waitKey();
 	//destroyAllWindows();
-	destroyWindow(this->configParams.edgeParams.blurThreshWindowName);
+	//destroyWindow(this->configParams.edgeParams.blurThreshWindowName);
 }
-void LineDetector::roiCallback(int, void *userdata) {
+void LineDetector::roiLaneCallback(int, void *userdata) {
 	EdgeConfig *edgeConfig = reinterpret_cast<EdgeConfig *>(userdata);   // cvtColor(params->colImg(params->config->roiBbox), params->grayImg, CV_RGB2GRAY);
 
 
@@ -334,6 +334,52 @@ void LineDetector::roiCallback(int, void *userdata) {
 	displayImg(roiImg, edgeConfig->roiBoxWindowName, edgeConfig->screenWidth, edgeConfig->screenHeight, img_num);
 	edgeDetectCallback(0, edgeConfig);
 }
+
+
+void LineDetector::setCarDetectionROIBox() {
+	namedWindow(this->configParams.edgeParams.roiBoxWindowName_car, WINDOW_AUTOSIZE);
+	//moveWindow(this->configParams.edgeParams.roiBoxWindowName_car, 0, 0);
+	size_t max_val_x = this->configParams.edgeParams.origImg.cols;
+	size_t max_val_y = this->configParams.edgeParams.origImg.rows;
+
+	createTrackbar("X1-Pos", this->configParams.edgeParams.roiBoxWindowName_car, &this->configParams.edgeParams.x1_roi_car, max_val_x, roiCarCallback, &this->configParams.edgeParams);
+	createTrackbar("RecWidth", this->configParams.edgeParams.roiBoxWindowName_car, &this->configParams.edgeParams.recWidth_car, max_val_x, roiCarCallback, &this->configParams.edgeParams);
+	createTrackbar("Y1-Pos", this->configParams.edgeParams.roiBoxWindowName_car, &this->configParams.edgeParams.y1_roi_car, max_val_y, roiCarCallback, &this->configParams.edgeParams);
+	createTrackbar("RecHeight", this->configParams.edgeParams.roiBoxWindowName_car, &this->configParams.edgeParams.recHeight_car, max_val_y, roiCarCallback, &this->configParams.edgeParams);
+};
+
+void LineDetector::roiCarCallback(int, void *userdata) {
+	EdgeConfig *edgeConfig = reinterpret_cast<EdgeConfig *>(userdata);   // cvtColor(params->colImg(params->config->roiBbox), params->grayImg, CV_RGB2GRAY);
+	//setTrackbarPos("X1-Pos", edgeConfig->roiBoxWindowName_car, edgeConfig->x1_roi_car);
+	//setTrackbarPos("Y1-Pos", edgeConfig->roiBoxWindowName_car, edgeConfig->y1_roi_car);
+
+	Mat img_ = edgeConfig->origImg.clone();
+	Mat roiImg;
+	if (edgeConfig->x1_roi_car + edgeConfig->recWidth_car >= img_.cols) {
+		edgeConfig->recWidth_car = img_.cols - edgeConfig->x1_roi_car;
+
+		setTrackbarPos("RecWidth", edgeConfig->roiBoxWindowName_car, edgeConfig->recWidth_car);
+	}
+
+	if (edgeConfig->y1_roi_car + edgeConfig->recHeight_car >= img_.rows) {
+		edgeConfig->recHeight_car = img_.rows - edgeConfig->y1_roi_car;
+		setTrackbarPos("RecHeight", edgeConfig->roiBoxWindowName_car, edgeConfig->recHeight_car);
+	}
+
+	Rect roi_box_car = Rect(edgeConfig->x1_roi_car, edgeConfig->y1_roi_car, edgeConfig->recWidth_car, edgeConfig->recHeight_car);
+	edgeConfig->roi_Box_car = roi_box_car;
+	roiImg = img_(roi_box_car);
+	//cvtColor(img_(roi_box), roiImg, COLOR_BGR2GRAY);
+
+	edgeConfig->roiImg_car = roiImg.clone();
+
+	int img_num = -1;
+
+	displayImg(roiImg, edgeConfig->roiBoxWindowName_car, edgeConfig->screenWidth, edgeConfig->screenHeight, img_num);
+	waitKey();
+	destroyAllWindows();
+};
+
 
 /* -------------------- Processing --------------------*/
 void LineDetector::Pipeline() {

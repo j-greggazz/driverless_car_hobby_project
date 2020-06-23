@@ -21,9 +21,10 @@ void detectAndDisplay_cascade_clf(Mat& frame, CascadeClassifier& car_clf);
 int trackCars_mobileNet();
 void lineDetectionTest() {
 	//LineDetector::PrintFullPath(".\\");
-	//loadVideo();
+	loadVideo(false);
 	//trackCars_haar_clf();
-	trackCars_mobileNet();
+
+	//trackCars_mobileNet();
 }
 
 int loadVideo(bool multithreading) {
@@ -158,6 +159,28 @@ int loadVideo(bool multithreading) {
 		Mat frame;
 		VideoCapture vCap;
 		vCap.open("../data/dashboardVid.mp4");
+
+		CV_TRACE_FUNCTION();
+		String modelTxt = "../models/MobileNetSSD_deploy.prototxt.txt";
+		String modelBin = "../models/MobileNetSSD_deploy.caffemodel";
+		Net net;
+		string CLASSES[] = { "background", "aeroplane", "bicycle", "bird", "boat",
+		"bottle", "bus", "car", "cat", "chair", "cow", "diningtable",
+		"dog", "horse", "motorbike", "person", "pottedplant", "sheep",
+		"sofa", "train", "tvmonitor" };
+
+		try {
+			net = dnn::readNetFromCaffe(modelTxt, modelBin);
+
+			cerr << "loaded successfully" << endl;
+		}
+		catch (cv::Exception& e)
+		{
+			std::cerr << "Exception: " << e.what() << std::endl;
+
+		}
+
+
 		bool firstFrame = false;
 
 		if (!vCap.isOpened()) {
@@ -178,14 +201,17 @@ int loadVideo(bool multithreading) {
 			char quit = 0; // Ascii value is 113
 
 			int i = 0;
+			int noFrame = 10000;
+			bool success = vCap.set(CAP_PROP_POS_FRAMES, noFrame);
 			while (vCap.isOpened() && quit != 113) {
-
+				
 				if (quit == 'q') {
 					quit = true;
 					break;
 				}
 				if (firstFrame) {
 					setup(ld, frame);
+					waitKey();
 					firstFrame = false;
 				}
 
@@ -196,7 +222,54 @@ int loadVideo(bool multithreading) {
 					ld.configParams.edgeParams.currImg = frame;
 
 					ld.processImg();
+					Mat img = frame(ld.configParams.edgeParams.roi_Box_car);
+					//Mat img = ld.configParams.edgeParams.roiImg_car;
+					Mat img2;
+					resize(img, img2, Size(300, 300));
+					//cv::resize(img, img2, cv::Size(), 0.2, 1);
+					Mat inputBlob = blobFromImage(img2, 0.007843, Size(300, 300), Scalar(127.5, 127.5, 127.5), false);  // 1. Mean subtraction is used to help combat illumination changes in the input images in our dataset
+																														// 2. Scaling 
+					net.setInput(inputBlob, "data");
+					Mat detection = net.forward("detection_out");
+					Mat detectionMat(detection.size[2], detection.size[3], CV_32F, detection.ptr<float>());
 
+					ostringstream ss;
+					float confidenceThreshold = 0.2;
+					for (int i = 0; i < detectionMat.rows; i++)
+					{
+						float confidence = detectionMat.at<float>(i, 2);
+
+						if (confidence > 0) {
+							cout << "Confidence = " << confidence << endl;
+						}
+						if (confidence > confidenceThreshold)
+						{
+							int idx = static_cast<int>(detectionMat.at<float>(i, 1));
+							int xLeftBottom = static_cast<int>(detectionMat.at<float>(i, 3) * img.cols);
+							int yLeftBottom = static_cast<int>(detectionMat.at<float>(i, 4) * img.rows);
+							int xRightTop = static_cast<int>(detectionMat.at<float>(i, 5) * img.cols);
+							int yRightTop = static_cast<int>(detectionMat.at<float>(i, 6) * img.rows);
+
+							Rect object((int)xLeftBottom, (int)yLeftBottom,
+								(int)(xRightTop - xLeftBottom),
+								(int)(yRightTop - yLeftBottom));
+
+							rectangle(img, object, Scalar(0, 255, 0), 2);
+
+							cout << CLASSES[idx] << ": " << confidence << endl;
+
+							ss.str("");
+							ss << confidence;
+							String conf(ss.str());
+							String label = CLASSES[idx] + ": " + conf;
+							int baseLine = 0;
+							Size labelSize = getTextSize(label, FONT_HERSHEY_SIMPLEX, 0.5, 1, &baseLine);
+							putText(img, label, Point(xLeftBottom, yLeftBottom), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 0));
+						}
+					}
+					imshow("detections", img);
+
+					//waitKey(100);
 					imshow("Sample", frame);
 
 					quit = waitKey(500);
@@ -261,7 +334,8 @@ void setup(LineDetector& ld_, Mat& img) {
 	cv::imshow(winName, m);
 
 	ld_.configParams.edgeParams.origImg = img.clone();
-	ld_.setROI_Box();
+	//ld_.setLane_ROIBox();
+	ld_.setCarDetectionROIBox();
 	//LineDetector::PrintFullPath(".\\");
 	//LineDetector::func();
 }
@@ -456,7 +530,6 @@ int trackCars_mobileNet() {
 		int noFrame = 10000;
 		bool success = vCap.set(CAP_PROP_POS_FRAMES, noFrame);
 		while (vCap.isOpened() && quit != 113) {
-
 			vCap.read(frame);
 			////j++;
 			cout << j << endl;

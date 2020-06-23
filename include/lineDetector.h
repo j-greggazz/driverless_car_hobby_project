@@ -40,18 +40,27 @@ public:
 		const std::string morphWindowName2 = "4. Morphological Operations 2";
 		const std::string houghWindowName = "5. Hough-Line Operations";
 		const std::string houghCWindowName = "6. Hough-Circle Operations";
+		const std::string roiBoxWindowName_car = "7. Set Roi-Box";
 		const int screenHeight = 1080;
 		const int screenWidth = 1920;
 		float newCols;
 		float newRows;
 
-		// roi Properties
-		int x1_roi = 513;  
+		// Lane Roi Properties
+		int x1_roi = 400;  
 		int y1_roi = 854;
-		int recWidth = 720;
+		int recWidth = 850;
 		int recHeight = 96;
 		cv::Rect roi_Bbox = cv::Rect(x1_roi, y1_roi, recWidth, recHeight);
 		cv::Mat roiImg;
+
+		// Car Roi Properties
+		int x1_roi_car = 0;
+		int y1_roi_car = 629;
+		int recWidth_car = 1489;
+		int recHeight_car = 300;
+		cv::Rect roi_Box_car = cv::Rect(x1_roi_car, y1_roi_car, recWidth_car, recHeight_car);
+		cv::Mat roiImg_car;
 
 		// Edge Detection Operations
 		int lowThresh = 9;
@@ -115,8 +124,10 @@ public:
 	/* -------------------- Preprocessing --------------------*/
 	
 	//  -- ROI Setting
-	void setROI_Box();
-	static void roiCallback(int, void *userdata);
+	void setLane_ROIBox();
+	static void roiLaneCallback(int, void *userdata);
+	void setCarDetectionROIBox();
+	static void roiCarCallback(int, void *userdata);
 
 	//  -- Edge detection
 	void edgeParametersP();

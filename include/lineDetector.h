@@ -13,7 +13,8 @@
 #include <atomic>
 #include <vector>
 #include <iostream>
-//#include <string.h>
+#include <mutex>
+
 
 class LineDetector {
 
@@ -112,9 +113,13 @@ public:
 		int minDistBtwCenters = 10;
 		int dp = 2; // Inverse ratio of the accumulator resolution to the image resolution
 
-		// Tracking properties:
+		// Tracking & detection variables:
 		std::vector<cv::Rect> trackedObjects;
+		cv::Ptr<cv::Tracker> tracker;
+		cv::dnn::Net net;
 
+		bool trackerExists = false;
+		bool imgProcessed = true;
 
 
 	};
@@ -165,11 +170,15 @@ public:
 	static void displayImg(cv::Mat Img, const std::string title, int screenWidth, int screenHeight, int imgNum);
 	static void drawLines(EdgeConfig* edgeParams, cv::Mat& Img, std::vector<cv::Vec4i> lines, bool laneDetection = false);
 	static void drawCircles(EdgeConfig * edgeParams, cv::Mat & img, const std::vector<cv::Vec3f>& circles);
-	//static void calcImgDims(EdgeConfig * edgeParams, cv::Mat & img);
+	static void initialiseTracker(cv::Ptr<cv::Tracker>& tracker,std::string& trackerType); 
+	//static int initialiseModelAndVideo(VideoCapture& vCap, cv::dnn::Net& net, string CLASSES[]);
 	static void PrintFullPath(char * partialPath);
 	static void func();
-	static void processImg_thread(LineDetector& ld, std::atomic<bool>& stopThreads, cv::dnn::Net& net);
 
+
+
+	static void processImg_thread(LineDetector& ld, std::atomic<bool>& stopThreads, cv::dnn::Net& net);
+	static void processDetectTrack_thread(LineDetector& ld, std::atomic<bool>& stopThreads, std::vector<cv::Rect2d>& trackBoxVec, std::mutex& mt_trackbox); // Mutexes for trackboxVec & net required:
 	
 
 

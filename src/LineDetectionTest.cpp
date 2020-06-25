@@ -14,11 +14,12 @@ using namespace cv::dnn;
 
 void setup(LineDetector& ld_, Mat& img);
 int loadVideo(bool multithreading = true);
+int startRun(bool multithreading = true);
 int detectCars_haar_clf();
 int test_mobileNet();
 void detectAndDisplay_cascade_clf(Mat& frame, CascadeClassifier& car_clf);
 int detectCars_mobileNet();
-int initialiseVideo(VideoCapture& vCap, Net& net, LineDetector& ld, Mat& frame, string CLASSES[]);
+int initialiseVideo(VideoCapture& vCap, string path);
 void initialiseTracker(Ptr<Tracker>& tracker, string& trackerType);
 void detectAndTrackCars();
 void detectAndTrackCars_single_tracker();
@@ -27,8 +28,11 @@ void lineDetectionTest() {
 	//LineDetector::PrintFullPath(".\\");
 	//loadVideo();
 	//trackCars_haar_clf();
-	detectAndTrackCars();
+	//detectAndTrackCars();
 	//trackCars_mobileNet();
+	// Global mutex:
+	startRun();
+
 }
 
 int loadVideo(bool multithreading) {
@@ -654,6 +658,7 @@ void detectAndDisplay_cascade_clf(Mat& frame, CascadeClassifier& car_clf)
 	imshow("Capture - Car detection", frame);
 }
 
+/*
 void detectAndTrackCars_single_tracker() {
 	string trackerTypes[8] = { "BOOSTING", "MIL", "KCF", "TLD","MEDIANFLOW", "GOTURN", "MOSSE", "CSRT" };
 	string trackerType = trackerTypes[2];
@@ -782,36 +787,64 @@ void detectAndTrackCars_single_tracker() {
 		}
 	}
 }
-
-
-
-int initialiseVideo(VideoCapture& vCap, Net& net, LineDetector& ld, Mat& frame, string CLASSES[]) {
-
-	vCap.open("../data/dashboardVid.mp4");
+*/
+int initialiseModelAndVideo(VideoCapture& vCap, Net& net, string CLASSES[]) {
 
 	CV_TRACE_FUNCTION();
 	String modelTxt = "../models/MobileNetSSD_deploy.prototxt.txt";
 	String modelBin = "../models/MobileNetSSD_deploy.caffemodel";
 
-
-
 	try {
 		net = dnn::readNetFromCaffe(modelTxt, modelBin);
-
 		cerr << "loaded successfully" << endl;
 	}
 	catch (cv::Exception& e)
 	{
 		std::cerr << "Exception: " << e.what() << std::endl;
-
+		return 0;
 	}
 
-	bool firstFrame = false;
+	vCap.open("../data/dashboardVid.mp4");
 	int noFrame = 10700;
+
+
+	if (!vCap.isOpened()) {
+		cout << "Error reading file: Check filepath." << endl;
+		waitKey();
+		return 0;
+	}
+
+	else if (vCap.get(CAP_PROP_FRAME_COUNT) < 1) {
+		cout << "Error: At least one frame is required" << endl;
+		waitKey();
+		return(0);
+	}
+
 	bool success = vCap.set(CAP_PROP_POS_FRAMES, noFrame);
 	return success;
 }
 
+int initialiseVideo(VideoCapture& vCap, string path) {
+
+	vCap.open(path);
+	int noFrame = 10700;
+
+
+	if (!vCap.isOpened()) {
+		cout << "Error reading file: Check filepath." << endl;
+		waitKey();
+		return 0;
+	}
+
+	else if (vCap.get(CAP_PROP_FRAME_COUNT) < 1) {
+		cout << "Error: At least one frame is required" << endl;
+		waitKey();
+		return(0);
+	}
+
+	bool success = vCap.set(CAP_PROP_POS_FRAMES, noFrame);
+	return success;
+}
 void initialiseTracker(Ptr<Tracker>& tracker, string& trackerType) {
 
 	if (trackerType == "BOOSTING")
@@ -833,7 +866,7 @@ void initialiseTracker(Ptr<Tracker>& tracker, string& trackerType) {
 
 }
 
-
+/*
 void detectAndTrackCars() {
 
 	char quit = 0;
@@ -851,9 +884,6 @@ void detectAndTrackCars() {
 
 
 	vector<int> failCounterVec;
-
-
-
 
 	vector<int> framesUntilDetectionVec;
 	// Initialise vector of trackers;
@@ -916,7 +946,7 @@ void detectAndTrackCars() {
 
 				if (startVec[j] | (framesUntilDetectionVec[j] <= 0 & failCounterVec[j] > 30) | (trackerExists[j] == false & countSinceLastSearch[j] >= 5)) {
 					startVec[j] = false;
-					Mat inputBlob = blobFromImage(img2, 0.007843, Size(300, 300), Scalar(127.5, 127.5, 127.5), false);  // 1. Mean subtraction is used to help combat illumination changes in the input images in our dataset
+					Mat inputBlob = dnn::blobFromImage(img2, 0.007843, Size(300, 300), Scalar(127.5, 127.5, 127.5), false);  // 1. Mean subtraction is used to help combat illumination changes in the input images in our dataset
 					countSinceLastSearch[j] = 0;																									// 2. Scaling 
 					net.setInput(inputBlob, "data");
 					Mat detection = net.forward("detection_out");
@@ -1043,6 +1073,166 @@ void detectAndTrackCars() {
 				quit = waitKey(100);
 
 			}
+		}
+	}
+}
+*/
+
+int startRun(bool multithreading) {
+
+	if (multithreading) {
+
+		// 1. Variables for pretrained MobileNet detection
+		CV_TRACE_FUNCTION();
+		String modelTxt = "../models/MobileNetSSD_deploy.prototxt.txt";
+		String modelBin = "../models/MobileNetSSD_deploy.caffemodel";
+		string CLASSES[] = { "background", "aeroplane", "bicycle", "bird", "boat",
+		"bottle", "bus", "car", "cat", "chair", "cow", "diningtable",
+		"dog", "horse", "motorbike", "person", "pottedplant", "sheep",
+		"sofa", "train", "tvmonitor" };
+		vector<Rect2d> trackBoxVec;
+
+		// 2. Choose tracker type:
+		string trackerTypes[8] = { "BOOSTING", "MIL", "KCF", "TLD","MEDIANFLOW", "GOTURN", "MOSSE", "CSRT" };
+		string trackerType = trackerTypes[2];
+
+		// 3. Variables for critical sections:
+		std::atomic<bool> stop_threading = false;
+		mutex trackBoxReserve;
+
+		// 4. Variables for video-capture
+		VideoCapture vCap;
+		string path_ = "../data/dashboardVid.mp4";
+		bool success = initialiseVideo(vCap, path_);
+
+
+		if (success) {
+
+			// General variables
+			Mat frame;
+			vCap.read(frame);
+			char quit = 0;
+			int processedFrames = 0;
+			bool detectorDisplayed = false;
+			int frameCount = 0;
+			int i = 0;
+
+			// Thread variables
+			const int num_threads = 3;
+			thread frameThreads[num_threads];
+			vector<LineDetector> lineDetectors;
+			lineDetectors.resize(num_threads);
+			vector<Rect2d> trackBoxVec;
+			trackBoxVec.resize(num_threads);
+
+
+			while (vCap.isOpened() && quit != 113) {
+
+				// A: INITIALISE THREADS
+				if (i < 3) {
+					// 1. Initialise lineDetector member variables
+					vCap.read(frame);
+					lineDetectors[i].configParams.edgeParams.id = i;
+					lineDetectors[i].configParams.edgeParams.currImg = frame;
+					lineDetectors[i].configParams.edgeParams.newImgAvailable = true;
+					lineDetectors[i].configParams.edgeParams.continueProcessing = true;
+					// 1.1 Initialise lineDetector trained detector
+					try {
+						lineDetectors[i].configParams.edgeParams.net = dnn::readNetFromCaffe(modelTxt, modelBin);
+						cerr << "loaded successfully" << endl;
+					}
+					catch (cv::Exception& e)
+					{
+						std::cerr << "Exception: " << e.what() << std::endl;
+
+					}
+					// 1.2 Initialise lineDetector tracker
+					Ptr<Tracker> tracker_;
+					initialiseTracker(tracker_, trackerType);
+					lineDetectors[i].configParams.edgeParams.tracker = tracker_;
+
+					// 2. Initialise thread for given line-detector
+					frameThreads[i] = std::thread(LineDetector::processDetectTrack_thread, std::ref(lineDetectors[i]), std::ref(stop_threading), std::ref(trackBoxVec), std::ref(trackBoxReserve));
+					i++;
+				}
+
+				// B: RUN DETECTION AND TRACKING
+				else if ((vCap.get(CAP_PROP_POS_FRAMES) + 1) < vCap.get(CAP_PROP_FRAME_COUNT)) {       // continue processing as long as further frames are available
+					//frameProcessed = false;
+					if (processedFrames == frameCount) {
+						vCap.read(frame);
+						frameCount++;
+					}
+
+					if (i % num_threads == 0) {
+						try {
+							if (lineDetectors[0].configParams.edgeParams.imgProcessed == true) {
+								imshow("Sample", lineDetectors[0].configParams.edgeParams.currImg.clone());
+								cout << "%3 == 0, frame " << i << endl;
+								lineDetectors[0].configParams.edgeParams.currImg = frame;
+								lineDetectors[0].configParams.edgeParams.newImgAvailable = true;
+								lineDetectors[0].configParams.edgeParams.imgProcessed == false;
+								processedFrames++;
+							}
+						}
+						catch (cv::Exception& e) {
+							int val = 0;
+						}
+					}
+
+					if (i % num_threads == 1) {
+						try {
+							if (lineDetectors[1].configParams.edgeParams.imgProcessed == true) {
+								imshow("Sample", lineDetectors[1].configParams.edgeParams.currImg.clone());
+								cout << "%3 == 1, frame " << i << endl;
+								lineDetectors[1].configParams.edgeParams.currImg = frame;
+								lineDetectors[1].configParams.edgeParams.newImgAvailable = true;
+								detectorDisplayed = 2;
+								processedFrames++;
+							}
+						}
+						catch (cv::Exception& e) {
+							int val = 0;
+						}
+
+					}
+
+					if (i % num_threads == 2) {
+						try {
+							if (lineDetectors[2].configParams.edgeParams.imgProcessed == true) {
+								imshow("Sample", lineDetectors[2].configParams.edgeParams.currImg.clone());
+								cout << "%3 == 2, frame " << i << endl;
+								lineDetectors[2].configParams.edgeParams.currImg = frame;
+								lineDetectors[2].configParams.edgeParams.newImgAvailable = true;
+								detectorDisplayed = 0;
+								processedFrames++;
+							}
+						}
+						catch (cv::Exception& e) {
+							int val = 0;
+						}
+					}
+
+					i++;
+					quit = waitKey(100);
+				}
+
+				if (quit == 'q') {
+					for (int i = 0; i < 3; i++) {
+						frameThreads[i].join();
+					}
+					break;
+				}
+			}
+
+			if (quit == 'q') {
+				stop_threading = true;
+				for (int i = 0; i < 3; i++) {
+					frameThreads[i].join();
+				}
+			}
+			destroyWindow("Sample");
+			return 1;
 		}
 	}
 }

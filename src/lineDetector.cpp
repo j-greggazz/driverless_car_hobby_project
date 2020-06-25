@@ -409,7 +409,7 @@ void LineDetector::detectCars(LineDetector& ld, dnn::Net& net) {
 
 	ostringstream ss;
 	float confidenceThreshold = 0.2;
-	for (int i = 0; i < detectionMat.rows; i++){
+	for (int i = 0; i < detectionMat.rows; i++) {
 		float confidence = detectionMat.at<float>(i, 2);
 
 		if (confidence > confidenceThreshold)
@@ -440,7 +440,7 @@ void LineDetector::detectCars(LineDetector& ld, dnn::Net& net) {
 		}
 	}
 	ld.configParams.edgeParams.detectionComplete = true;
-		//imshow("detections", img);
+	//imshow("detections", img);
 }
 
 void LineDetector::detectLanes() {
@@ -597,7 +597,7 @@ void LineDetector::detectLanes(LineDetector& ld) {
 	ld.configParams.edgeParams.newImgAvailable = false;
 }
 
-static void trackCars(LineDetector& ld, cv::dnn::Net& net) {
+void LineDetector::trackCars(LineDetector& ld, cv::dnn::Net& net) {
 
 
 
@@ -817,7 +817,62 @@ void LineDetector::drawCircles(EdgeConfig* edgeParams, cv::Mat& img, const std::
 	}
 }
 //void LineDetector::calcImgDims(EdgeConfig * edgeParams, cv::Mat & img) {};
+/*int LineDetector::initialiseModelAndVideo(VideoCapture& vCap, cv::dnn::Net& net, string CLASSES[]) {
 
+	CV_TRACE_FUNCTION();
+	String modelTxt = "../models/MobileNetSSD_deploy.prototxt.txt";
+	String modelBin = "../models/MobileNetSSD_deploy.caffemodel";
+
+	try {
+		net = dnn::readNetFromCaffe(modelTxt, modelBin);
+		cerr << "loaded successfully" << endl;
+	}
+	catch (cv::Exception& e)
+	{
+		std::cerr << "Exception: " << e.what() << std::endl;
+		return 0;
+	}
+
+	vCap.open("../data/dashboardVid.mp4");
+	int noFrame = 10700;
+
+
+	if (!vCap.isOpened()) {
+		cout << "Error reading file: Check filepath." << endl;
+		waitKey();
+		return 0;
+	}
+
+	else if (vCap.get(CAP_PROP_FRAME_COUNT) < 1) {
+		cout << "Error: At least one frame is required" << endl;
+		waitKey();
+		return(0);
+	}
+
+	bool success = vCap.set(CAP_PROP_POS_FRAMES, noFrame);
+	return success;
+}
+*/
+void LineDetector::initialiseTracker(Ptr<Tracker>& tracker, string& trackerType) {
+
+	if (trackerType == "BOOSTING")
+		tracker = TrackerBoosting::create();
+	if (trackerType == "MIL")
+		tracker = TrackerMIL::create();
+	if (trackerType == "KCF")
+		tracker = TrackerKCF::create();
+	if (trackerType == "TLD")
+		tracker = TrackerTLD::create();
+	if (trackerType == "MEDIANFLOW")
+		tracker = TrackerMedianFlow::create();
+	if (trackerType == "GOTURN")
+		tracker = TrackerGOTURN::create();
+	if (trackerType == "MOSSE")
+		tracker = TrackerMOSSE::create();
+	if (trackerType == "CSRT")
+		tracker = TrackerCSRT::create();
+
+}
 
 /* -------------------- Multithreading -------------------- */
 
@@ -827,7 +882,7 @@ void LineDetector::processImg_thread(LineDetector& ld, atomic<bool>& stopThreads
 
 		if (ld.configParams.edgeParams.newImgAvailable) {
 			detectCars(ld, net);
-			detectLanes(ld);		
+			detectLanes(ld);
 		}
 
 		else {
@@ -840,6 +895,159 @@ void LineDetector::processImg_thread(LineDetector& ld, atomic<bool>& stopThreads
 }
 
 
+void LineDetector::processDetectTrack_thread(LineDetector& ld, std::atomic<bool>& stopThreads, vector<Rect2d>& trackBoxVec, std::mutex& mt_trackbox) {
+
+	Rect2d trackBox;
+	int framesUntilDetection = 0;
+	int failCounter = 0;
+	int countsSinceSearch = 0;
+	const std::string CLASSES[] = { "background", "aeroplane", "bicycle", "bird", "boat",
+"bottle", "bus", "car", "cat", "chair", "cow", "diningtable",
+"dog", "horse", "motorbike", "person", "pottedplant", "sheep",
+"sofa", "train", "tvmonitor" };
+	dnn::Net net = ld.configParams.edgeParams.net;
+
+
+	while (ld.configParams.edgeParams.continueProcessing) {
+
+		if (ld.configParams.edgeParams.newImgAvailable) {
+			Mat img2;
+			Mat frame = ld.configParams.edgeParams.currImg;
+			resize(frame, img2, Size(300, 300));
+
+			if ((framesUntilDetection <= 0 & failCounter > 30) | (ld.configParams.edgeParams.trackerExists == false & countsSinceSearch >= 5)) {
+
+				Mat inputBlob = dnn::blobFromImage(img2, 0.007843, Size(300, 300), Scalar(127.5, 127.5, 127.5), false);  // 1. Mean subtraction is used to help combat illumination changes in the input images in our dataset
+				countsSinceSearch = 0;																									// 2. Scaling 
+				net.setInput(inputBlob, "data");
+				Mat detection = net.forward("detection_out");
+				Mat detectionMat(detection.size[2], detection.size[3], CV_32F, detection.ptr<float>());
+				ostringstream ss;
+				float confidenceThreshold = 0.1;
+				for (int i = 0; i < detectionMat.rows; i++) {
+					float confidence = detectionMat.at<float>(i, 2);
+
+					if (confidence > confidenceThreshold) {
+						int idx = static_cast<int>(detectionMat.at<float>(i, 1));
+
+						if (CLASSES[idx] == "car" | CLASSES[idx] == "bus") {
+							int xLeftBottom = static_cast<int>(detectionMat.at<float>(i, 3) * frame.cols);
+							int yLeftBottom = static_cast<int>(detectionMat.at<float>(i, 4) * frame.rows);
+							int xRightTop = static_cast<int>(detectionMat.at<float>(i, 5) * frame.cols);
+							int yRightTop = static_cast<int>(detectionMat.at<float>(i, 6) * frame.rows);
+
+							trackBox = Rect2d((int)xLeftBottom, (int)yLeftBottom,
+								(int)(xRightTop - xLeftBottom),
+								(int)(yRightTop - yLeftBottom));
+
+							int j = ld.configParams.edgeParams.id;
+							bool trackBoxOk = true;
+							{
+								std::lock_guard<mutex> lock(mt_trackbox);
+								for (int k = 0; k < trackBoxVec.size(); k++) {
+
+									if (k != j) {
+
+										Rect2d trackBox_k = trackBoxVec[k];
+										Point center_of_rect_k = (trackBox_k.br() + trackBox_k.tl())*0.5;
+										if (center_of_rect_k.x != 0 & center_of_rect_k.y != 0) {
+
+											Point center_of_rect_j = (trackBox.br() + trackBox.tl())*0.5;
+
+											Point diff = center_of_rect_j - center_of_rect_k;
+											float dist_Bboxes = cv::sqrt(diff.x*diff.x + diff.y*diff.y);
+
+											// Threshold for another tracked object should be the distance between current bounding box centers
+											if (dist_Bboxes < 20 | (center_of_rect_k.x == 0 & center_of_rect_k.y == 0)) {
+												trackBoxOk = false;
+											}
+											else {
+												cout << "dist_Bboxes: " << dist_Bboxes << endl;
+											}
+										}
+									}
+								}
+
+								if (trackBoxOk) {
+									ld.configParams.edgeParams.tracker->init(frame, trackBox);
+									framesUntilDetection = 100;
+									failCounter = 0;
+									trackBoxVec[j] = trackBox;
+
+									rectangle(frame, trackBox, Scalar(0, 255, 0), 2);
+									cout << "Tracker instantiated!!: " << confidence << endl;
+
+									ss.str("");
+									ss << confidence;
+									String conf(ss.str());
+									String label = CLASSES[idx] + ": " + conf;
+									int baseLine = 0;
+									Size labelSize = getTextSize(label, FONT_HERSHEY_SIMPLEX, 0.5, 1, &baseLine);
+									putText(frame, label, Point(xLeftBottom, yLeftBottom), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 0));
+									ld.configParams.edgeParams.trackerExists = true;
+
+								}
+							}
+						}
+					}
+				}
+
+
+
+			}
+
+
+			else {
+
+				// Update the tracking result
+				if (ld.configParams.edgeParams.trackerExists) {
+					{
+						std::lock_guard<mutex> lock(mt_trackbox);
+						bool ok = ld.configParams.edgeParams.tracker->update(frame, trackBoxVec[ld.configParams.edgeParams.id]);
+
+						if (ok)
+						{
+							// Tracking success : Draw the tracked object
+							failCounter = 0;
+							rectangle(frame, trackBoxVec[ld.configParams.edgeParams.id], Scalar(0, 255, 0), 2, 1);
+						}
+						else
+						{
+							// Tracking failure detected.
+							failCounter++;
+							if (failCounter > 30) {
+								putText(frame, "Tracking abandoned: too many frames without successful tracking", Point(100, 80), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(0, 0, 255), 2);
+								ld.configParams.edgeParams.trackerExists = false;
+								Rect2d trackBox;
+								trackBoxVec[ld.configParams.edgeParams.id] = trackBox;
+
+							}
+							else {
+								rectangle(frame, trackBoxVec[ld.configParams.edgeParams.id], Scalar(0, 0, 255), 2, 1);
+								putText(frame, "Tracking failure detected -previous position depicted", Point(100, 80), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(0, 0, 255), 2);
+							}
+						}
+					}
+					// Display tracker type on frame
+					putText(frame, "Tracker ID = " + to_string(ld.configParams.edgeParams.id), Point(100, 20), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(50, 170, 50), 2);
+
+				}
+
+				else {
+					countsSinceSearch++;
+				}
+				rectangle(frame, ld.configParams.edgeParams.roi_Box_car, Scalar(255, 0, 0), 2, 1);
+				String label = "CAR BBOX";
+				int baseLine = 0;
+				Size labelSize = getTextSize(label, FONT_HERSHEY_SIMPLEX, 0.5, 1, &baseLine);
+
+			}
+
+			ld.configParams.edgeParams.imgProcessed = true;
+		}
+	}
+
+}
 
 
 

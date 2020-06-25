@@ -9,7 +9,7 @@
 #include <opencv2/video.hpp>
 #include <opencv2/opencv.hpp>
 #include <opencv2/core/utils/trace.hpp>
-
+#include <opencv2/tracking/tracker.hpp>
 #include <atomic>
 #include <vector>
 #include <iostream>
@@ -31,7 +31,6 @@ public:
 		bool newImgAvailable = false;
 		bool linesDrawn = true;
 		bool detectionComplete = true;
-
 
 		// Window Properties
 		const std::string blurThreshWindowName = "1. Blur & Thresholding";
@@ -113,6 +112,11 @@ public:
 		int minDistBtwCenters = 10;
 		int dp = 2; // Inverse ratio of the accumulator resolution to the image resolution
 
+		// Tracking properties:
+		std::vector<cv::Rect> trackedObjects;
+
+
+
 	};
 
 	struct ConfigParams {
@@ -152,6 +156,7 @@ public:
 	void Pipeline();
 	void processImg();
 	void detectLanes();
+	static void detectCars(LineDetector& ld, cv::dnn::Net& net);
 	static void trackCars(LineDetector& ld, cv::dnn::Net& net);
 	
 	static void detectLanes(LineDetector& ld);

@@ -14,15 +14,20 @@ using namespace cv::dnn;
 
 void setup(LineDetector& ld_, Mat& img);
 int loadVideo(bool multithreading = true);
-int trackCars_haar_clf();
+int detectCars_haar_clf();
 int test_mobileNet();
 void detectAndDisplay_cascade_clf(Mat& frame, CascadeClassifier& car_clf);
-int trackCars_mobileNet();
+int detectCars_mobileNet();
+int initialiseVideo(VideoCapture& vCap, Net& net, LineDetector& ld, Mat& frame, string CLASSES[]);
+void initialiseTracker(Ptr<Tracker>& tracker, string& trackerType);
+void detectAndTrackCars();
+void detectAndTrackCars_single_tracker();
+
 void lineDetectionTest() {
 	//LineDetector::PrintFullPath(".\\");
-	loadVideo();
+	//loadVideo();
 	//trackCars_haar_clf();
-
+	detectAndTrackCars();
 	//trackCars_mobileNet();
 }
 
@@ -56,12 +61,12 @@ int loadVideo(bool multithreading) {
 		else {
 			//cout << "Number of frames = " << vCap.get(CAP_PROP_FRAME_COUNT) << endl;
 			vCap.read(frame);
-			char quit = 0; 
+			char quit = 0;
 
 			int i = 0;
 			const int num_threads = 3;
-			vector<LineDetector> lineDetectors; 
-			lineDetectors.resize(num_threads); 
+			vector<LineDetector> lineDetectors;
+			lineDetectors.resize(num_threads);
 			vector<Net> mobileNets;
 			mobileNets.resize(num_threads);
 			thread frameThreads[num_threads];
@@ -79,7 +84,7 @@ int loadVideo(bool multithreading) {
 					}
 					break;
 				}
-				
+
 				if (firstFrame) {
 					setup(ld, frame);
 					firstFrame = false;
@@ -113,12 +118,12 @@ int loadVideo(bool multithreading) {
 
 				else if ((vCap.get(CAP_PROP_POS_FRAMES) + 1) < vCap.get(CAP_PROP_FRAME_COUNT)) {       // continue processing as long as further frames are available
 					//frameProcessed = false;
-					if (processedFrames == frameCount){
+					if (processedFrames == frameCount) {
 						vCap.read(frame);
 						frameCount++;
 					}
-					
-					
+
+
 
 					if (i % num_threads == 0) {
 						try {
@@ -129,7 +134,7 @@ int loadVideo(bool multithreading) {
 								cout << "%3 == 0, frame " << i << endl;
 								lineDetectors[0].configParams.edgeParams.currImg = frame;
 								lineDetectors[0].configParams.edgeParams.newImgAvailable = true;
-								detectorDisplayed = 1;	
+								detectorDisplayed = 1;
 								processedFrames++;
 							}
 						}
@@ -147,14 +152,14 @@ int loadVideo(bool multithreading) {
 								cout << "%3 == 1, frame " << i << endl;
 								lineDetectors[1].configParams.edgeParams.currImg = frame;
 								lineDetectors[1].configParams.edgeParams.newImgAvailable = true;
-								detectorDisplayed = 2;		
+								detectorDisplayed = 2;
 								processedFrames++;
 							}
 						}
 						catch (cv::Exception& e) {
 							int val = 0;
 						}
-					
+
 					}
 
 					if (i % num_threads == 2) {
@@ -172,9 +177,9 @@ int loadVideo(bool multithreading) {
 						}
 						catch (cv::Exception& e) {
 							int val = 0;
-						}					
+						}
 					}
-					
+
 					i++;
 					quit = waitKey(100);
 				}
@@ -241,7 +246,7 @@ int loadVideo(bool multithreading) {
 			int noFrame = 10000;
 			bool success = vCap.set(CAP_PROP_POS_FRAMES, noFrame);
 			while (vCap.isOpened() && quit != 113) {
-				
+
 				if (quit == 'q') {
 					quit = true;
 					break;
@@ -376,7 +381,7 @@ void setup(LineDetector& ld_, Mat& img) {
 	//LineDetector::func();
 }
 
-int trackCars_haar_clf() {
+int detectCars_haar_clf() {
 	//CvHaarClassifierCascade *cascade;
 	CascadeClassifier car_clf;
 	car_clf.load("../models/cars.xml");
@@ -432,7 +437,7 @@ int test_mobileNet() {
 	"bottle", "bus", "car", "cat", "chair", "cow", "diningtable",
 	"dog", "horse", "motorbike", "person", "pottedplant", "sheep",
 	"sofa", "train", "tvmonitor" };
-	
+
 	//.load("../models/cars.xml");
 
 	CV_TRACE_FUNCTION();
@@ -440,9 +445,9 @@ int test_mobileNet() {
 	String modelBin = "../models/MobileNetSSD_deploy.caffemodel";
 	Net net;
 
-	try{
+	try {
 		net = dnn::readNetFromCaffe(modelTxt, modelBin);
-		
+
 		cerr << "loaded successfully" << endl;
 	}
 	catch (cv::Exception& e)
@@ -459,7 +464,7 @@ int test_mobileNet() {
 
 	vector<Mat> images;
 	size_t count = fn.size(); //number of png files in images folder
-	for (size_t i = 0; i < count; i++){
+	for (size_t i = 0; i < count; i++) {
 		Mat img = imread(fn[i]);
 		if (img.empty())
 		{
@@ -470,7 +475,7 @@ int test_mobileNet() {
 		Mat img2;
 		resize(img, img2, Size(300, 300));
 		Mat inputBlob = blobFromImage(img2, 0.007843, Size(300, 300), Scalar(127.5, 127.5, 127.5), false);  // 1. Mean subtraction is used to help combat illumination changes in the input images in our dataset
-		                                                                                                    // 2. Scaling 
+																											// 2. Scaling 
 		net.setInput(inputBlob, "data");
 		Mat detection = net.forward("detection_out");
 		Mat detectionMat(detection.size[2], detection.size[3], CV_32F, detection.ptr<float>());
@@ -507,7 +512,7 @@ int test_mobileNet() {
 			}
 		}
 		imshow("detections", img);
-		
+
 		waitKey();
 
 
@@ -516,7 +521,7 @@ int test_mobileNet() {
 	return 1;
 };
 
-int trackCars_mobileNet() {
+int detectCars_mobileNet() {
 
 	string CLASSES[] = { "background", "aeroplane", "bicycle", "bird", "boat",
 	"bottle", "bus", "car", "cat", "chair", "cow", "diningtable",
@@ -559,7 +564,7 @@ int trackCars_mobileNet() {
 
 	else {
 		//cout << "Number of frames = " << vCap.get(CAP_PROP_FRAME_COUNT) << endl;
-		
+
 		char quit = 0; // Ascii value is 113
 		int j = 0;
 		// solution 1
@@ -642,9 +647,402 @@ void detectAndDisplay_cascade_clf(Mat& frame, CascadeClassifier& car_clf)
 	{
 		Point center(cars[i].x + cars[i].width / 2, cars[i].y + cars[i].height / 2);
 		ellipse(frame, center, Size(cars[i].width / 2, cars[i].height / 2), 0, 0, 360, Scalar(255, 0, 255), 4);
-		
-		
+
+
 	}
 	//-- Show what you got
 	imshow("Capture - Car detection", frame);
+}
+
+void detectAndTrackCars_single_tracker() {
+	string trackerTypes[8] = { "BOOSTING", "MIL", "KCF", "TLD","MEDIANFLOW", "GOTURN", "MOSSE", "CSRT" };
+	string trackerType = trackerTypes[2];
+	Ptr<Tracker> tracker;
+	initialiseTracker(tracker, trackerType);
+	vector<Ptr<Tracker>> trackerVec;
+	trackerVec.push_back(tracker);
+
+	Mat frame;
+	VideoCapture vCap;
+	Net net;
+	string CLASSES[] = { "background", "aeroplane", "bicycle", "bird", "boat",
+	"bottle", "bus", "car", "cat", "chair", "cow", "diningtable",
+	"dog", "horse", "motorbike", "person", "pottedplant", "sheep",
+	"sofa", "train", "tvmonitor" };
+	vCap.open("../data/dashboardVid.mp4");
+	LineDetector ld;
+	initialiseVideo(vCap, net, ld, frame, CLASSES);
+	int framesUntilDetection = 0;
+	Rect2d bbox;
+	char quit = 0; // Ascii value is 113
+	int failCounter = 0;
+
+	while (vCap.isOpened() && quit != 113) {
+		vCap.read(frame);
+		double timer = (double)getTickCount();
+		if (quit == 'q') {
+			quit = true;
+			break;
+		}
+
+		else if ((vCap.get(CAP_PROP_POS_FRAMES) + 1) < vCap.get(CAP_PROP_FRAME_COUNT)) {       // continue processing as long as further frames are available
+
+			Mat img2;
+			resize(frame, img2, Size(300, 300));
+			framesUntilDetection--;
+
+
+			if (framesUntilDetection <= 0 | failCounter > 30) {
+				Mat inputBlob = blobFromImage(img2, 0.007843, Size(300, 300), Scalar(127.5, 127.5, 127.5), false);  // 1. Mean subtraction is used to help combat illumination changes in the input images in our dataset
+																													// 2. Scaling 
+				net.setInput(inputBlob, "data");
+				Mat detection = net.forward("detection_out");
+				Mat detectionMat(detection.size[2], detection.size[3], CV_32F, detection.ptr<float>());
+				ostringstream ss;
+				float confidenceThreshold = 0.3;
+				for (int i = 0; i < detectionMat.rows; i++) {
+					float confidence = detectionMat.at<float>(i, 2);
+
+					if (confidence > confidenceThreshold) {
+						int idx = static_cast<int>(detectionMat.at<float>(i, 1));
+
+						if (CLASSES[idx] == "car" | CLASSES[idx] == "bus") {
+							int xLeftBottom = static_cast<int>(detectionMat.at<float>(i, 3) * frame.cols);
+							int yLeftBottom = static_cast<int>(detectionMat.at<float>(i, 4) * frame.rows);
+							int xRightTop = static_cast<int>(detectionMat.at<float>(i, 5) * frame.cols);
+							int yRightTop = static_cast<int>(detectionMat.at<float>(i, 6) * frame.rows);
+
+							bbox = Rect2d((int)xLeftBottom, (int)yLeftBottom,
+								(int)(xRightTop - xLeftBottom),
+								(int)(yRightTop - yLeftBottom));
+
+							rectangle(frame, bbox, Scalar(0, 255, 0), 2);
+
+							tracker->init(frame, bbox);
+							//cout << CLASSES[idx] << ": " << confidence << endl;
+
+							ss.str("");
+							ss << confidence;
+							String conf(ss.str());
+							String label = CLASSES[idx] + ": " + conf;
+							int baseLine = 0;
+							Size labelSize = getTextSize(label, FONT_HERSHEY_SIMPLEX, 0.5, 1, &baseLine);
+							putText(frame, label, Point(xLeftBottom, yLeftBottom), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 0));
+							framesUntilDetection = 100;
+							failCounter = 0;
+						}
+					}
+				}
+			}
+
+			else {
+
+				// Update the tracking result
+
+
+				bool ok = tracker->update(frame, bbox);
+
+				// Calculate Frames per second (FPS)
+				float fps = getTickFrequency() / ((double)getTickCount() - timer);
+
+				if (ok)
+				{
+					// Tracking success : Draw the tracked object
+					failCounter = 0;
+					rectangle(frame, bbox, Scalar(0, 255, 0), 2, 1);
+				}
+				else
+				{
+					// Tracking failure detected.
+					failCounter++;
+					if (failCounter > 30) {
+						putText(frame, "Tracking abandoned: too many frames without successful tracking", Point(100, 80), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(0, 0, 255), 2);
+					}
+					else {
+						rectangle(frame, bbox, Scalar(0, 0, 255), 2, 1);
+						putText(frame, "Tracking failure detected -previous position depicted", Point(100, 80), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(0, 0, 255), 2);
+					}
+				}
+				// Display tracker type on frame
+				putText(frame, trackerType + " Tracker", Point(100, 20), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(50, 170, 50), 2);
+
+				// Display FPS on frame
+				putText(frame, "FPS : " + std::to_string(int(fps)), Point(100, 50), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(50, 170, 50), 2);
+			}
+
+
+			rectangle(frame, ld.configParams.edgeParams.roi_Box_car, Scalar(255, 0, 0), 2, 1);
+			String label = "CAR BBOX";
+			int baseLine = 0;
+			Size labelSize = getTextSize(label, FONT_HERSHEY_SIMPLEX, 0.5, 1, &baseLine);
+			imshow("Status", frame);
+
+			quit = waitKey(100);
+
+		}
+	}
+}
+
+
+
+int initialiseVideo(VideoCapture& vCap, Net& net, LineDetector& ld, Mat& frame, string CLASSES[]) {
+
+	vCap.open("../data/dashboardVid.mp4");
+
+	CV_TRACE_FUNCTION();
+	String modelTxt = "../models/MobileNetSSD_deploy.prototxt.txt";
+	String modelBin = "../models/MobileNetSSD_deploy.caffemodel";
+
+
+
+	try {
+		net = dnn::readNetFromCaffe(modelTxt, modelBin);
+
+		cerr << "loaded successfully" << endl;
+	}
+	catch (cv::Exception& e)
+	{
+		std::cerr << "Exception: " << e.what() << std::endl;
+
+	}
+
+	bool firstFrame = false;
+	int noFrame = 10700;
+	bool success = vCap.set(CAP_PROP_POS_FRAMES, noFrame);
+	return success;
+}
+
+void initialiseTracker(Ptr<Tracker>& tracker, string& trackerType) {
+
+	if (trackerType == "BOOSTING")
+		tracker = TrackerBoosting::create();
+	if (trackerType == "MIL")
+		tracker = TrackerMIL::create();
+	if (trackerType == "KCF")
+		tracker = TrackerKCF::create();
+	if (trackerType == "TLD")
+		tracker = TrackerTLD::create();
+	if (trackerType == "MEDIANFLOW")
+		tracker = TrackerMedianFlow::create();
+	if (trackerType == "GOTURN")
+		tracker = TrackerGOTURN::create();
+	if (trackerType == "MOSSE")
+		tracker = TrackerMOSSE::create();
+	if (trackerType == "CSRT")
+		tracker = TrackerCSRT::create();
+
+}
+
+
+void detectAndTrackCars() {
+
+	char quit = 0;
+
+	Mat frame;
+	VideoCapture vCap;
+	Net net;
+	string CLASSES[] = { "background", "aeroplane", "bicycle", "bird", "boat",
+	"bottle", "bus", "car", "cat", "chair", "cow", "diningtable",
+	"dog", "horse", "motorbike", "person", "pottedplant", "sheep",
+	"sofa", "train", "tvmonitor" };
+	vCap.open("../data/dashboardVid.mp4");
+	LineDetector ld;
+	initialiseVideo(vCap, net, ld, frame, CLASSES);
+
+
+	vector<int> failCounterVec;
+
+
+
+
+	vector<int> framesUntilDetectionVec;
+	// Initialise vector of trackers;
+	string trackerTypes[8] = { "BOOSTING", "MIL", "KCF", "TLD","MEDIANFLOW", "GOTURN", "MOSSE", "CSRT" };
+	string trackerType = trackerTypes[2];
+	int n_trackers = 2;
+	vector<Rect2d> trackBoxVec;
+	vector<Ptr<Tracker>> trackerVec;
+	vector<bool> trackerExists;
+	vector<bool> startVec;
+
+	vector<int> countSinceLastSearch;
+	for (int j = 0; j < n_trackers; j++) {
+
+		// 1. Add tracker
+		Ptr<Tracker> tracker;
+		initialiseTracker(tracker, trackerType);
+		trackerVec.push_back(tracker);
+
+		// 2. Add trackbox
+		Rect2d trackBox;
+		trackBoxVec.push_back(trackBox);
+
+		// 3. Add counterUntilDetection
+		int framesUntilDetection = 0;
+		framesUntilDetectionVec.push_back(framesUntilDetection);
+
+		// 4. Add failCounter
+		int failCounter = 0;
+		failCounterVec.push_back(failCounter);
+
+		bool trackerInstantiated = false;
+		trackerExists.push_back(trackerInstantiated);
+
+		int countsSinceSearch = 300;
+		countSinceLastSearch.push_back(countsSinceSearch);
+
+		bool start = true;
+		startVec.push_back(start);
+	}
+
+
+	while (vCap.isOpened() && quit != 113) {
+		vCap.read(frame);
+		double timer = (double)getTickCount();
+		if (quit == 'q') {
+			quit = true;
+			break;
+		}
+
+		else if ((vCap.get(CAP_PROP_POS_FRAMES) + 1) < vCap.get(CAP_PROP_FRAME_COUNT)) {       // continue processing as long as further frames are available
+
+			Mat img2;
+			resize(frame, img2, Size(300, 300));
+
+
+			for (int j = 0; j < trackerVec.size(); j++) {
+
+				framesUntilDetectionVec[j]--;
+
+				if (startVec[j] | (framesUntilDetectionVec[j] <= 0 & failCounterVec[j] > 30) | (trackerExists[j] == false & countSinceLastSearch[j] >= 5)) {
+					startVec[j] = false;
+					Mat inputBlob = blobFromImage(img2, 0.007843, Size(300, 300), Scalar(127.5, 127.5, 127.5), false);  // 1. Mean subtraction is used to help combat illumination changes in the input images in our dataset
+					countSinceLastSearch[j] = 0;																									// 2. Scaling 
+					net.setInput(inputBlob, "data");
+					Mat detection = net.forward("detection_out");
+					Mat detectionMat(detection.size[2], detection.size[3], CV_32F, detection.ptr<float>());
+					ostringstream ss;
+					float confidenceThreshold = 0.1;
+					for (int i = 0; i < detectionMat.rows; i++) {
+						float confidence = detectionMat.at<float>(i, 2);
+
+						if (confidence > confidenceThreshold) {
+							int idx = static_cast<int>(detectionMat.at<float>(i, 1));
+
+							if (CLASSES[idx] == "car" | CLASSES[idx] == "bus") {
+								int xLeftBottom = static_cast<int>(detectionMat.at<float>(i, 3) * frame.cols);
+								int yLeftBottom = static_cast<int>(detectionMat.at<float>(i, 4) * frame.rows);
+								int xRightTop = static_cast<int>(detectionMat.at<float>(i, 5) * frame.cols);
+								int yRightTop = static_cast<int>(detectionMat.at<float>(i, 6) * frame.rows);
+
+								Rect2d trackBox = Rect2d((int)xLeftBottom, (int)yLeftBottom,
+									(int)(xRightTop - xLeftBottom),
+									(int)(yRightTop - yLeftBottom));
+
+								bool trackBoxOk = true;
+								for (int k = 0; k < trackerVec.size(); k++) {
+
+
+									// Only instantiate a tracker if it doesnt track the same thing as another tracker!
+									if (k != j) {
+										Rect2d trackBox_k = trackBoxVec[k];
+										Point center_of_rect_k = (trackBox_k.br() + trackBox_k.tl())*0.5;
+										if (center_of_rect_k.x != 0 & center_of_rect_k.y != 0) {
+
+											Point center_of_rect_j = (trackBox.br() + trackBox.tl())*0.5;
+
+											Point diff = center_of_rect_j - center_of_rect_k;
+											float dist_Bboxes = cv::sqrt(diff.x*diff.x + diff.y*diff.y);
+
+											// Threshold for another tracked object should be the distance between current bounding box centers
+											if (dist_Bboxes < 20 | (center_of_rect_k.x == 0 & center_of_rect_k.y == 0)) {
+												trackBoxOk = false;
+											}
+											else {
+												cout << "dist_Bboxes: " << dist_Bboxes << endl;
+											}
+										}
+									}
+								}
+
+								if (trackBoxOk) {
+									trackerVec[j]->init(frame, trackBox);
+									framesUntilDetectionVec[j] = 100;
+									failCounterVec[j] = 0;
+									trackBoxVec[j] = trackBox;
+
+									rectangle(frame, trackBox, Scalar(0, 255, 0), 2);
+									cout << "Tracker instantiated!!: " << confidence << endl;
+
+									ss.str("");
+									ss << confidence;
+									String conf(ss.str());
+									String label = CLASSES[idx] + ": " + conf;
+									int baseLine = 0;
+									Size labelSize = getTextSize(label, FONT_HERSHEY_SIMPLEX, 0.5, 1, &baseLine);
+									putText(frame, label, Point(xLeftBottom, yLeftBottom), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 0));
+									trackerExists[j] = true;
+
+								}
+							}
+						}
+					}
+				}
+
+				else {
+
+					// Update the tracking result
+
+					for (int j = 0; j < trackerVec.size(); j++) {
+						if (trackerExists[j]) {
+							bool ok = trackerVec[j]->update(frame, trackBoxVec[j]);
+
+							// Calculate Frames per second (FPS)
+							float fps = getTickFrequency() / ((double)getTickCount() - timer);
+
+							if (ok)
+							{
+								// Tracking success : Draw the tracked object
+								failCounterVec[j] = 0;
+								rectangle(frame, trackBoxVec[j], Scalar(0, 255, 0), 2, 1);
+							}
+							else
+							{
+								// Tracking failure detected.
+								failCounterVec[j]++;
+								if (failCounterVec[j] > 30) {
+									putText(frame, "Tracking abandoned: too many frames without successful tracking", Point(100, 80), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(0, 0, 255), 2);
+									trackerExists[j] = false;
+									Rect2d trackBox;
+									trackBoxVec[j] = trackBox;
+
+								}
+								else {
+									rectangle(frame, trackBoxVec[j], Scalar(0, 0, 255), 2, 1);
+									putText(frame, "Tracking failure detected -previous position depicted", Point(100, 80), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(0, 0, 255), 2);
+								}
+							}
+							// Display tracker type on frame
+							putText(frame, trackerType + " Tracker", Point(100, 20), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(50, 170, 50), 2);
+
+							// Display FPS on frame
+							putText(frame, "FPS : " + std::to_string(int(fps)), Point(100, 50), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(50, 170, 50), 2);
+						}
+
+						else {
+							countSinceLastSearch[j]++;
+						}
+						rectangle(frame, ld.configParams.edgeParams.roi_Box_car, Scalar(255, 0, 0), 2, 1);
+						String label = "CAR BBOX";
+						int baseLine = 0;
+						Size labelSize = getTextSize(label, FONT_HERSHEY_SIMPLEX, 0.5, 1, &baseLine);
+					}
+				}
+				imshow("Status", frame);
+
+				quit = waitKey(100);
+
+			}
+		}
+	}
 }

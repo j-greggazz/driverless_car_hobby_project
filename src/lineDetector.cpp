@@ -391,7 +391,7 @@ void LineDetector::processImg() {
 	detectLanes();
 }
 
-void LineDetector::trackCars(LineDetector& ld, dnn::Net& net) {
+void LineDetector::detectCars(LineDetector& ld, dnn::Net& net) {
 
 	string CLASSES[] = { "background", "aeroplane", "bicycle", "bird", "boat",
 	"bottle", "bus", "car", "cat", "chair", "cow", "diningtable",
@@ -596,7 +596,12 @@ void LineDetector::detectLanes(LineDetector& ld) {
 	// 5. Confirm image_i processed
 	ld.configParams.edgeParams.newImgAvailable = false;
 }
-;
+
+static void trackCars(LineDetector& ld, cv::dnn::Net& net) {
+
+
+
+}
 
 /* -------------------- Helper functions --------------------*/
 void LineDetector::displayImg(Mat img, const std::string title, int screenWidth, int screenHeight, int img_num) {
@@ -818,14 +823,11 @@ void LineDetector::drawCircles(EdgeConfig* edgeParams, cv::Mat& img, const std::
 
 void LineDetector::processImg_thread(LineDetector& ld, atomic<bool>& stopThreads, dnn::Net& net) {
 
-	
-
 	while (ld.configParams.edgeParams.continueProcessing) {
 
 		if (ld.configParams.edgeParams.newImgAvailable) {
-			trackCars(ld, net);
-			detectLanes(ld);
-			
+			detectCars(ld, net);
+			detectLanes(ld);		
 		}
 
 		else {

@@ -1124,7 +1124,14 @@ int startRun(bool multithreading) {
 			lineDetectors.resize(num_threads);
 			vector<Rect2d> trackBoxVec;
 			trackBoxVec.resize(num_threads);
+			vector<int> trackingStatus = { 0, 0, 0 };
+			vector<string> statusLabels = { "", "", "" };
 
+			// Display variables
+			Mat displayFrame;
+			Rect2d trackBox;
+			int status;
+			string statusLabel;
 
 			while (vCap.isOpened() && quit != 113) {
 
@@ -1152,7 +1159,7 @@ int startRun(bool multithreading) {
 					lineDetectors[i].configParams.edgeParams.tracker = tracker_;
 
 					// 2. Initialise thread for given line-detector
-					frameThreads[i] = std::thread(LineDetector::processDetectTrack_thread, std::ref(lineDetectors[i]), std::ref(stop_threading), std::ref(trackBoxVec), std::ref(trackBoxReserve));
+					frameThreads[i] = std::thread(LineDetector::processDetectTrack_thread, std::ref(lineDetectors[i]), std::ref(stop_threading), std::ref(trackBoxVec), std::ref(trackingStatus), std::ref(statusLabels), std::ref(trackBoxReserve));
 					i++;
 				}
 
@@ -1167,7 +1174,26 @@ int startRun(bool multithreading) {
 					if (i % num_threads == 0) {
 						try {
 							if (lineDetectors[0].configParams.edgeParams.imgProcessed == true) {
-								imshow("Sample", lineDetectors[0].configParams.edgeParams.currImg.clone());
+								displayFrame = lineDetectors[0].configParams.edgeParams.currImg.clone();
+								{
+									const std::lock_guard<mutex> lock(trackBoxReserve);
+									for (int k = 0; k < trackBoxVec.size(); k++) {
+										trackBox = trackBoxVec[k];
+										status = trackingStatus[k];
+										statusLabel = statusLabels[k];
+										if (status == 1) {
+											putText(displayFrame, statusLabel, Point(trackBox.x, trackBox.y), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 0), 2);
+											rectangle(displayFrame, trackBox, Scalar(0, 255, 0), 1);
+										}
+										else if (status == 2) {
+											putText(displayFrame, statusLabel, Point(trackBox.x, trackBox.y), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 0, 255), 2);
+											rectangle(displayFrame, trackBox, Scalar(0, 0, 255), 1);
+										}
+									}
+
+								}
+
+								imshow("Sample", displayFrame);
 								cout << "%3 == 0, frame " << i << endl;
 								lineDetectors[0].configParams.edgeParams.currImg = frame;
 								lineDetectors[0].configParams.edgeParams.newImgAvailable = true;
@@ -1183,7 +1209,25 @@ int startRun(bool multithreading) {
 					if (i % num_threads == 1) {
 						try {
 							if (lineDetectors[1].configParams.edgeParams.imgProcessed == true) {
-								imshow("Sample", lineDetectors[1].configParams.edgeParams.currImg.clone());
+								displayFrame = lineDetectors[1].configParams.edgeParams.currImg.clone();
+								{
+									const std::lock_guard<mutex> lock(trackBoxReserve);
+									for (int k = 0; k < trackBoxVec.size(); k++) {
+										trackBox = trackBoxVec[k];
+										status = trackingStatus[k];
+										statusLabel = statusLabels[k];
+										if (status == 1) {
+											putText(displayFrame, statusLabel, Point(trackBox.x, trackBox.y), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 0), 2);
+											rectangle(displayFrame, trackBox, Scalar(0, 255, 0), 1);
+										}
+										else if (status == 2) {
+											putText(displayFrame, statusLabel, Point(trackBox.x, trackBox.y), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 0, 255), 2);
+											rectangle(displayFrame, trackBox, Scalar(0, 0, 255), 1);
+										}
+									}
+
+								}
+								imshow("Sample", displayFrame);
 								cout << "%3 == 1, frame " << i << endl;
 								lineDetectors[1].configParams.edgeParams.currImg = frame;
 								lineDetectors[1].configParams.edgeParams.newImgAvailable = true;
@@ -1200,7 +1244,25 @@ int startRun(bool multithreading) {
 					if (i % num_threads == 2) {
 						try {
 							if (lineDetectors[2].configParams.edgeParams.imgProcessed == true) {
-								imshow("Sample", lineDetectors[2].configParams.edgeParams.currImg.clone());
+								displayFrame = lineDetectors[2].configParams.edgeParams.currImg.clone();
+								{
+									const std::lock_guard<mutex> lock(trackBoxReserve);
+									for (int k = 0; k < trackBoxVec.size(); k++) {
+										trackBox = trackBoxVec[k];
+										status = trackingStatus[k];
+										statusLabel = statusLabels[k];
+										if (status == 1) {
+											putText(displayFrame, statusLabel, Point(trackBox.x, trackBox.y), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 0), 2);
+											rectangle(displayFrame, trackBox, Scalar(0, 255, 0), 1);
+										}
+										else if (status == 2) {
+											putText(displayFrame, statusLabel, Point(trackBox.x, trackBox.y), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 0, 255), 2);
+											rectangle(displayFrame, trackBox, Scalar(0, 0, 255), 1);
+										}
+									}
+
+								}
+								imshow("Sample", displayFrame);
 								cout << "%3 == 2, frame " << i << endl;
 								lineDetectors[2].configParams.edgeParams.currImg = frame;
 								lineDetectors[2].configParams.edgeParams.newImgAvailable = true;
@@ -1218,17 +1280,11 @@ int startRun(bool multithreading) {
 				}
 
 				if (quit == 'q') {
+					stop_threading = true;
 					for (int i = 0; i < 3; i++) {
 						frameThreads[i].join();
 					}
 					break;
-				}
-			}
-
-			if (quit == 'q') {
-				stop_threading = true;
-				for (int i = 0; i < 3; i++) {
-					frameThreads[i].join();
 				}
 			}
 			destroyWindow("Sample");

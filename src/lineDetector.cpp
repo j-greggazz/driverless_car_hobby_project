@@ -895,9 +895,10 @@ void LineDetector::processImg_thread(LineDetector& ld, atomic<bool>& stopThreads
 }
 
 
-void LineDetector::processDetectTrack_thread(LineDetector& ld, std::atomic<bool>& stopThreads, vector<Rect2d>& trackBoxVec, std::mutex& mt_trackbox) {
+void LineDetector::processDetectTrack_thread(LineDetector& ld, std::atomic<bool>& stopThreads, vector<Rect2d>& trackBoxVec, vector<int> &trackingStatus, vector<string> &statusLabels, std::mutex& mt_trackbox) {
 
 	Rect2d trackBox;
+	int id = ld.configParams.edgeParams.id;
 	int framesUntilDetection = 0;
 	int failCounter = 0;
 	int countsSinceSearch = 0;
@@ -915,7 +916,7 @@ void LineDetector::processDetectTrack_thread(LineDetector& ld, std::atomic<bool>
 			Mat frame = ld.configParams.edgeParams.currImg;
 			resize(frame, img2, Size(300, 300));
 
-			if ((framesUntilDetection <= 0 & failCounter > 30) | (ld.configParams.edgeParams.trackerExists == false & countsSinceSearch >= 5)) {
+			if ((framesUntilDetection <= 0 & failCounter > 30) | (ld.configParams.edgeParams.trackerExists == false & countsSinceSearch >= 40)) {
 
 				Mat inputBlob = dnn::blobFromImage(img2, 0.007843, Size(300, 300), Scalar(127.5, 127.5, 127.5), false);  // 1. Mean subtraction is used to help combat illumination changes in the input images in our dataset
 				countsSinceSearch = 0;																									// 2. Scaling 
@@ -940,13 +941,13 @@ void LineDetector::processDetectTrack_thread(LineDetector& ld, std::atomic<bool>
 								(int)(xRightTop - xLeftBottom),
 								(int)(yRightTop - yLeftBottom));
 
-							int j = ld.configParams.edgeParams.id;
+							
 							bool trackBoxOk = true;
 							{
-								std::lock_guard<mutex> lock(mt_trackbox);
+								const std::lock_guard<mutex> lock(mt_trackbox);
 								for (int k = 0; k < trackBoxVec.size(); k++) {
 
-									if (k != j) {
+									if (k != id) {
 
 										Rect2d trackBox_k = trackBoxVec[k];
 										Point center_of_rect_k = (trackBox_k.br() + trackBox_k.tl())*0.5;
@@ -958,44 +959,42 @@ void LineDetector::processDetectTrack_thread(LineDetector& ld, std::atomic<bool>
 											float dist_Bboxes = cv::sqrt(diff.x*diff.x + diff.y*diff.y);
 
 											// Threshold for another tracked object should be the distance between current bounding box centers
-											if (dist_Bboxes < 20 | (center_of_rect_k.x == 0 & center_of_rect_k.y == 0)) {
+											if (dist_Bboxes < 100 | (center_of_rect_k.x == 0 & center_of_rect_k.y == 0)) {
 												trackBoxOk = false;
-											}
-											else {
-												cout << "dist_Bboxes: " << dist_Bboxes << endl;
 											}
 										}
 									}
 								}
-
+							}
 								if (trackBoxOk) {
+									{
+										const std::lock_guard<mutex> lock(mt_trackbox);
+										trackBoxVec[id] = trackBox;
+										trackingStatus[id] = 1;
+									}
 									ld.configParams.edgeParams.tracker->init(frame, trackBox);
 									framesUntilDetection = 100;
 									failCounter = 0;
-									trackBoxVec[j] = trackBox;
+									
 
-									rectangle(frame, trackBox, Scalar(0, 255, 0), 2);
+									//rectangle(frame, trackBox, Scalar(0, 255, 0), 2);
 									cout << "Tracker instantiated!!: " << confidence << endl;
+									ld.configParams.edgeParams.trackerExists = true;
 
 									ss.str("");
 									ss << confidence;
 									String conf(ss.str());
 									String label = CLASSES[idx] + ": " + conf;
+									statusLabels[id] = label;
 									int baseLine = 0;
 									Size labelSize = getTextSize(label, FONT_HERSHEY_SIMPLEX, 0.5, 1, &baseLine);
-									putText(frame, label, Point(xLeftBottom, yLeftBottom), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 0));
-									ld.configParams.edgeParams.trackerExists = true;
-
+									//putText(frame, label, Point(xLeftBottom, yLeftBottom), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 0));
+									//ld.configParams.edgeParams.currImg = frame;
 								}
 							}
 						}
 					}
 				}
-
-
-
-			}
-
 
 			else {
 
@@ -1003,28 +1002,31 @@ void LineDetector::processDetectTrack_thread(LineDetector& ld, std::atomic<bool>
 				if (ld.configParams.edgeParams.trackerExists) {
 					{
 						std::lock_guard<mutex> lock(mt_trackbox);
-						bool ok = ld.configParams.edgeParams.tracker->update(frame, trackBoxVec[ld.configParams.edgeParams.id]);
+						bool ok = ld.configParams.edgeParams.tracker->update(frame, trackBoxVec[id]);
 
 						if (ok)
 						{
 							// Tracking success : Draw the tracked object
 							failCounter = 0;
-							rectangle(frame, trackBoxVec[ld.configParams.edgeParams.id], Scalar(0, 255, 0), 2, 1);
+							rectangle(frame, trackBoxVec[id], Scalar(0, 255, 0), 2, 1);
 						}
 						else
 						{
 							// Tracking failure detected.
 							failCounter++;
 							if (failCounter > 30) {
-								putText(frame, "Tracking abandoned: too many frames without successful tracking", Point(100, 80), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(0, 0, 255), 2);
+								//putText(frame, "Tracking abandoned: too many frames without successful tracking", Point(100, 80), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(0, 0, 255), 2);
 								ld.configParams.edgeParams.trackerExists = false;
 								Rect2d trackBox;
-								trackBoxVec[ld.configParams.edgeParams.id] = trackBox;
+								trackBoxVec[id] = trackBox;
+								trackingStatus[id] = 0;
 
 							}
 							else {
-								rectangle(frame, trackBoxVec[ld.configParams.edgeParams.id], Scalar(0, 0, 255), 2, 1);
-								putText(frame, "Tracking failure detected -previous position depicted", Point(100, 80), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(0, 0, 255), 2);
+								//rectangle(frame, trackBoxVec[ld.configParams.edgeParams.id], Scalar(0, 0, 255), 2, 1);
+								//putText(frame, "Tracking failure detected -previous position depicted", Point(100, 80), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(0, 0, 255), 2);
+								trackingStatus[id] = 2;
+								statusLabels[id] = "Tracker Lost";
 							}
 						}
 					}
@@ -1036,15 +1038,20 @@ void LineDetector::processDetectTrack_thread(LineDetector& ld, std::atomic<bool>
 				else {
 					countsSinceSearch++;
 				}
-				rectangle(frame, ld.configParams.edgeParams.roi_Box_car, Scalar(255, 0, 0), 2, 1);
-				String label = "CAR BBOX";
-				int baseLine = 0;
-				Size labelSize = getTextSize(label, FONT_HERSHEY_SIMPLEX, 0.5, 1, &baseLine);
+				//rectangle(frame, ld.configParams.edgeParams.roi_Box_car, Scalar(255, 0, 0), 2, 1);
+				//String label = "CAR BBOX";
+				//int baseLine = 0;
+				//Size labelSize = getTextSize(label, FONT_HERSHEY_SIMPLEX, 0.5, 1, &baseLine);
 
 			}
-
+			ld.configParams.edgeParams.currImg = frame;
 			ld.configParams.edgeParams.imgProcessed = true;
+
 		}
+		if (stopThreads) {
+			return;
+		}
+		this_thread::sleep_for(chrono::milliseconds(100));
 	}
 
 }

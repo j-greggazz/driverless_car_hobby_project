@@ -824,12 +824,10 @@ int initialiseModelAndVideo(VideoCapture& vCap, Net& net, string CLASSES[]) {
 	return success;
 }
 
-int initialiseVideo(VideoCapture& vCap, string path) {
+int initialiseVideo(VideoCapture& vCap, string path, int startFrame) {
 
 	vCap.open(path);
-	int noFrame = 10700;
-
-
+	
 	if (!vCap.isOpened()) {
 		cout << "Error reading file: Check filepath." << endl;
 		waitKey();
@@ -842,7 +840,7 @@ int initialiseVideo(VideoCapture& vCap, string path) {
 		return(0);
 	}
 
-	bool success = vCap.set(CAP_PROP_POS_FRAMES, noFrame);
+	bool success = vCap.set(CAP_PROP_POS_FRAMES, startFrame);
 	return success;
 }
 void initialiseTracker(Ptr<Tracker>& tracker, string& trackerType) {
@@ -1099,11 +1097,13 @@ int startRun(bool multithreading) {
 		// 3. Variables for critical sections:
 		std::atomic<bool> stop_threading = false;
 		mutex trackBoxReserve;
+		mutex laneLinesReserve;
 
 		// 4. Variables for video-capture
 		VideoCapture vCap;
 		string path_ = "../data/dashboardVid.mp4";
-		bool success = initialiseVideo(vCap, path_);
+		int startFrame = 10500;
+		bool success = initialiseVideo(vCap, path_, startFrame);
 
 
 		if (success) {
@@ -1126,6 +1126,8 @@ int startRun(bool multithreading) {
 			trackBoxVec.resize(num_threads);
 			vector<int> trackingStatus = { 0, 0, 0 };
 			vector<string> statusLabels = { "", "", "" };
+			vector<vector<cv::Vec4i>> lines;
+			lines.resize(num_threads);
 
 			// Display variables
 			Mat displayFrame;
@@ -1159,7 +1161,7 @@ int startRun(bool multithreading) {
 					lineDetectors[i].configParams.edgeParams.tracker = tracker_;
 
 					// 2. Initialise thread for given line-detector
-					frameThreads[i] = std::thread(LineDetector::processDetectTrack_thread, std::ref(lineDetectors[i]), std::ref(stop_threading), std::ref(trackBoxVec), std::ref(trackingStatus), std::ref(statusLabels), std::ref(trackBoxReserve));
+					frameThreads[i] = std::thread(LineDetector::processDetectTrack_thread, std::ref(lineDetectors[i]), std::ref(stop_threading), std::ref(trackBoxVec), std::ref(trackingStatus), std::ref(statusLabels), std::ref(lines), std::ref(trackBoxReserve), std::ref(laneLinesReserve));
 					i++;
 				}
 
@@ -1175,6 +1177,13 @@ int startRun(bool multithreading) {
 						try {
 							if (lineDetectors[0].configParams.edgeParams.imgProcessed == true) {
 								displayFrame = lineDetectors[0].configParams.edgeParams.currImg.clone();
+								{	
+									const std::lock_guard<mutex> lock(laneLinesReserve);
+									for (size_t k = 0; k < lines.size(); k++) {
+										vector<cv::Vec4i> lines_k = lines[k];
+										LineDetector::drawLines(&lineDetectors[0].configParams.edgeParams, displayFrame, lines_k, true);
+									}
+								}
 								{
 									const std::lock_guard<mutex> lock(trackBoxReserve);
 									for (int k = 0; k < trackBoxVec.size(); k++) {
@@ -1211,6 +1220,13 @@ int startRun(bool multithreading) {
 							if (lineDetectors[1].configParams.edgeParams.imgProcessed == true) {
 								displayFrame = lineDetectors[1].configParams.edgeParams.currImg.clone();
 								{
+									const std::lock_guard<mutex> lock(laneLinesReserve);
+									for (size_t k = 0; k < lines.size(); k++) {
+										vector<cv::Vec4i> lines_k = lines[k];
+										LineDetector::drawLines(&lineDetectors[1].configParams.edgeParams, displayFrame, lines_k, true);
+									}
+								}
+								{
 									const std::lock_guard<mutex> lock(trackBoxReserve);
 									for (int k = 0; k < trackBoxVec.size(); k++) {
 										trackBox = trackBoxVec[k];
@@ -1245,6 +1261,13 @@ int startRun(bool multithreading) {
 						try {
 							if (lineDetectors[2].configParams.edgeParams.imgProcessed == true) {
 								displayFrame = lineDetectors[2].configParams.edgeParams.currImg.clone();
+								{
+									const std::lock_guard<mutex> lock(laneLinesReserve);
+									for (size_t k = 0; k < lines.size(); k++) {
+										vector<cv::Vec4i> lines_k = lines[k];
+										LineDetector::drawLines(&lineDetectors[2].configParams.edgeParams, displayFrame, lines_k, true);
+									}
+								}
 								{
 									const std::lock_guard<mutex> lock(trackBoxReserve);
 									for (int k = 0; k < trackBoxVec.size(); k++) {

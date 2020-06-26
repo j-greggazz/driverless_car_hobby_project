@@ -514,7 +514,7 @@ void LineDetector::detectLanes() {
 	drawLines(&this->configParams.edgeParams, this->configParams.edgeParams.currImg, lines, laneDetect);
 }
 
-void LineDetector::detectLanes(LineDetector& ld) {
+void LineDetector::detectLanes(LineDetector& ld, bool draw) {
 
 	int cannyKernelSize = ld.configParams.edgeParams.cannyKernel + 3;
 	cv::Mat cannyImg;
@@ -588,8 +588,9 @@ void LineDetector::detectLanes(LineDetector& ld) {
 	}
 	ld.configParams.edgeParams.edgeLines = lines;
 	bool laneDetect = true;
-
-	drawLines(&ld.configParams.edgeParams, curr_img_copy, lines, laneDetect);
+	if (draw) {
+		drawLines(&ld.configParams.edgeParams, curr_img_copy, lines, laneDetect);
+	}
 	//drawLines(&ld.configParams.edgeParams, ld.configParams.edgeParams.currImg, lines, laneDetect);
 	ld.configParams.edgeParams.currImg = curr_img_copy;
 	ld.configParams.edgeParams.linesDrawn = true;
@@ -895,7 +896,7 @@ void LineDetector::processImg_thread(LineDetector& ld, atomic<bool>& stopThreads
 }
 
 
-void LineDetector::processDetectTrack_thread(LineDetector& ld, std::atomic<bool>& stopThreads, vector<Rect2d>& trackBoxVec, vector<int> &trackingStatus, vector<string> &statusLabels, std::mutex& mt_trackbox) {
+void LineDetector::processDetectTrack_thread(LineDetector& ld, std::atomic<bool>& stopThreads, vector<Rect2d>& trackBoxVec, vector<int> &trackingStatus, vector<string> &statusLabels, vector<vector<cv::Vec4i>>& lines, std::mutex& mt_trackbox, std::mutex& lines_reserve) {
 
 	Rect2d trackBox;
 	int id = ld.configParams.edgeParams.id;
@@ -910,8 +911,14 @@ void LineDetector::processDetectTrack_thread(LineDetector& ld, std::atomic<bool>
 
 
 	while (ld.configParams.edgeParams.continueProcessing) {
-
+		
 		if (ld.configParams.edgeParams.newImgAvailable) {
+			detectLanes(ld);
+			{
+				const std::lock_guard<mutex> lock(lines_reserve);
+				lines[id] = ld.configParams.edgeParams.edgeLines;
+			}
+
 			Mat img2;
 			Mat frame = ld.configParams.edgeParams.currImg;
 			resize(frame, img2, Size(300, 300));
@@ -941,7 +948,6 @@ void LineDetector::processDetectTrack_thread(LineDetector& ld, std::atomic<bool>
 								(int)(xRightTop - xLeftBottom),
 								(int)(yRightTop - yLeftBottom));
 
-							
 							bool trackBoxOk = true;
 							{
 								const std::lock_guard<mutex> lock(mt_trackbox);
@@ -1055,13 +1061,6 @@ void LineDetector::processDetectTrack_thread(LineDetector& ld, std::atomic<bool>
 	}
 
 }
-
-
-
-
-
-
-
 
 
 void LineDetector::PrintFullPath(char * partialPath)

@@ -164,7 +164,7 @@ public:
 	static void detectCars(LineDetector& ld, cv::dnn::Net& net);
 	static void trackCars(LineDetector& ld, cv::dnn::Net& net);
 	
-	static void detectLanes(LineDetector& ld);
+	static void detectLanes(LineDetector& ld, bool draw = false);
 
 	/* -------------------- Helper functions --------------------*/
 	static void displayImg(cv::Mat Img, const std::string title, int screenWidth, int screenHeight, int imgNum);
@@ -178,7 +178,7 @@ public:
 
 
 	static void processImg_thread(LineDetector& ld, std::atomic<bool>& stopThreads, cv::dnn::Net& net);
-	static void processDetectTrack_thread(LineDetector& ld, std::atomic<bool>& stopThreads, std::vector<cv::Rect2d>& trackBoxVec, std::vector<int> &trackingStatus, std::vector<std::string> &statusLabels, std::mutex& mt_trackbox); // Mutexes for trackboxVec & net required:
+	static void processDetectTrack_thread(LineDetector& ld, std::atomic<bool>& stopThreads, std::vector<cv::Rect2d>& trackBoxVec, std::vector<int> &trackingStatus, std::vector<std::string> &statusLabels, std::vector<std::vector<cv::Vec4i>>& lines, std::mutex& mt_trackbox, std::mutex& lines_reserve);
 	
 
 

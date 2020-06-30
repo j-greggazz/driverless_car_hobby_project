@@ -3,21 +3,24 @@
 #include <conio.h>
 #include <stdlib.h>
 #include <direct.h>
-#include <lineDetector.h>
+#include <autoDrive.h>
 using namespace cv;
 using namespace std;
 
 // Ctrl+k Ctrl+D align code
-void lineDetectionTest();
+void AutoDriveTest();
 
 int main()
 {
+	
 
-	lineDetectionTest();
 
-	
-	
-	
+
+	AutoDriveTest();
+
+
+
+
 	return 1;
 }
 

@@ -20,6 +20,8 @@ public:
 	std::string getClasses();
 	int getFramesUntilDetection();
 	int getFailureCounter();
+	int getTrackStatus();
+	cv::Rect2d getTrackbox();
 	int getCountsSinceLastSearch();
 	void setFramesUntilDetection(int framesUntilDetec);
 	void setFailureCounter(int failCount);
@@ -33,10 +35,11 @@ private:
 									"dog", "horse", "motorbike", "person", "pottedplant", "sheep","sofa", "train", "tvmonitor" };
 	int framesUntilDetection;
 	int failCounter; 
-	int trackingStatus;
+	int trackingStatus; // If 0 no tracker instantiated, if 1 tracker instantiated and tracking, if 2 tracker instantiated however has lost initial tracked object 
 	int countsSinceLastSearch;
 	std::string modelTxt = "../models/MobileNetSSD_deploy.prototxt.txt";
 	std::string modelBin = "../models/MobileNetSSD_deploy.caffemodel";
+	cv::Rect2d td_trackbox;
 	
 
 

@@ -43,18 +43,25 @@ void AutoDriveTest() {
 		string trackerTypes[8] = { "BOOSTING", "MIL", "KCF", "TLD", "MEDIANFLOW", "GOTURN", "MOSSE", "CSRT" };
 		string trackerType = trackerTypes[2];
 
-		// 4. Define threading-related variables:
+		// 4. Define threading-related safety variables:
+		mutex lanesGuard;
+		mutex trackBoxGuard;
+		mutex imgAvailGuard;
+		mutex trackStatusGuard;
+		mutex imgProcessedGuard;
+		atomic<bool> stop_threading = false;
+
 		const int num_threads = 3;
 		thread frameThreads[num_threads];
-		std::atomic<bool> stop_threading = false;
+				
+		vector<int> trackingStatus = { 0, 0, 0 }; // TODO: Need to resize/define size based on num_threads
+		vector<bool> imgAvailable = { 0, 0, 0 };
+		vector<bool> imgProcessed = { 0, 0, 0 };
 		vector<Rect2d> trackBoxVec;
 		trackBoxVec.resize(num_threads);
-		mutex trackBoxReserve;
 		vector<vector<cv::Vec4i>> lines;
 		lines.resize(num_threads);
-		mutex laneLinesReserve;
-		vector<atomic<int>> trackingStatus = { 0, 0, 0 };
-		vector<atomic<bool>> imgAvailable = { 0, 0, 0 };
+
 		vector<AutoDrive> AutoDrives;
 
 		// 5. Start Setup of program
@@ -97,13 +104,9 @@ void AutoDriveTest() {
 			AutoDrive ad = AutoDrive(id, ld, td, ct);
 			AutoDrives.push_back(ad);
 
-			// 6.6 Initialise threads:
-			std::thread(AutoDrive::autoDriveThread, std::ref(ad), std::ref(imgAvailable[i]), std::ref(stop_threading), std::ref(trackBoxVec), std::ref(trackingStatus[i]), std::ref(lines), std::ref(trackBoxReserve), std::ref(laneLinesReserve));
-		}
-
-		// 7. Initialise thread and thread variables:
-			   			
-
+			// 6.6 Initialise threads: // Rewrite
+			//std::thread(AutoDrive::autoDriveThread, std::ref(ad), std::ref(imgAvailable), std::ref(stop_threading), std::ref(trackBoxVec), std::ref(trackingStatus), std::ref(lines), std::ref(trackBoxReserve), std::ref(laneLinesReserve));
+		}  			
 			
 
 		int i = -1;
@@ -115,18 +118,28 @@ void AutoDriveTest() {
 			}
 
 			for (int j = 0; j < num_threads; j++) {
+				bool wait = true;
 				if (i % num_threads == j) {
-
-
+					while (wait) {
+						bool imgProcessed;
+						{
+							const std::lock_guard<mutex> lock(imgProcessedGuard);
+							imgProcessed = AutoDrives[j].getImgProcessed();
+						}
+						if (imgProcessed) {
+							// TODO
+							// Draw all trackboxes 
+							// Draw all lines
+							// Display image
+						}
+						else {
+							this_thread::sleep_for(microseconds(10));
+						}
+					}
 				}
-
-
 			}
 
 
-			//else {
-			//	this_thread::sleep_for(microseconds(10));
-			//}
 
 
 

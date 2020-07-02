@@ -23,6 +23,11 @@ void AutoDrive::updateImg(cv::Mat& img)
 	ct.setCurrImg(img);
 }
 
+int AutoDrive::getId()
+{
+	return id;
+}
+
 LineDetector AutoDrive::getLd()
 {
 	return ld;
@@ -38,13 +43,26 @@ CarTracker AutoDrive::getCt()
 	return ct;
 }
 
-void AutoDrive::autoDriveThread(AutoDrive& aD, atomic<bool>& imgAvail, atomic<bool>& stopThreads, vector<Rect2d>& trackBoxVec, vector<int> &trackingStatus, vector<vector<Vec4i>>& lines, mutex& mt_trackbox, mutex& lines_reserve) {
+void AutoDrive::setImgProcessed(bool status)
+{
+	imgProcessed = status;
+}
+
+bool AutoDrive::getImgProcessed()
+{
+	return imgProcessed;
+}
+
+void AutoDrive::autoDriveThread(AutoDrive& aD, vector<bool>& imgAvail, atomic<bool>& stopThreads, vector<Rect2d>& trackBoxVec, vector<int> &trackingStatus, vector<vector<Vec4i>>& lines, mutex& imgAvailableGuard, mutex& trackingStatusGuard, mutex& mt_trackbox, mutex& lines_reserve) {
+	//void AutoDrive::autoDriveThread(AutoDrive& aD, atomic<bool>& imgAvail, atomic<bool>& stopThreads, vector<Rect2d>& trackBoxVec, vector<int> &trackingStatus, vector<vector<Vec4i>>& lines, mutex& mt_trackbox, mutex& lines_reserve) {
 
 
-	int id = aD.getLd().getId();
+	int id = aD.getId();
 	int trackStatus;
 	Rect2d trackBox;
 	const std::string CLASSES = aD.getTd().getClasses();
+	bool trackerComplete = true;
+	bool detectionComplete = true;
 	//dnn::Net net = aD.getTd().getDnnNet();
 
 	while (true) {
@@ -53,10 +71,18 @@ void AutoDrive::autoDriveThread(AutoDrive& aD, atomic<bool>& imgAvail, atomic<bo
 			break;
 			return;
 		}
+		bool imgAvailable = false;
+		{
+			const std::lock_guard<mutex> lock(imgAvailableGuard);
+			bool imgAvailable = imgAvail[id];
+		}
 
-		else if (imgAvail) {
+		if (imgAvailable) {
 			Mat img;
-			imgAvail = false;
+			{
+				const std::lock_guard<mutex> lock(imgAvailableGuard);
+				imgAvail[id] = false;
+			}
 
 			// Step 1: Lane Detection
 			aD.getLd().detectObject();
@@ -68,74 +94,53 @@ void AutoDrive::autoDriveThread(AutoDrive& aD, atomic<bool>& imgAvail, atomic<bo
 				img = aD.getLd().getCurrImg();
 			}
 
-			// Step 2: 
+			// Optional Step 2: If no tracker instantiated, keep detecting
 			if (trackStatus == 0 & aD.getTd().getCountsSinceLastSearch() >= 30)  // No object currently tracked and detection has not been run for 40 frames
 			{
 				aD.getTd().setCountsSinceLastSearch(0);
 				aD.getTd().detectObject(trackBoxVec, mt_trackbox);
+				trackStatus = aD.getTd().getTrackStatus();
 
-
-
+				if (trackStatus == 1) {
+					Rect2d trackbox = aD.getTd().getTrackbox();
+					aD.getCt().initTracker(img, trackBox);
+				}
 			}
+
+			else if (trackStatus == 1) {
+				bool updateSuccess = aD.getCt().updateTracker(img, trackBox);
+				if (updateSuccess)
+				{
+					// Tracking success : Draw the tracked object
+					aD.getTd().setFailureCounter(0);
+				}
+
+				else {
+					int currFailCount = aD.getTd().getFailureCounter() + 1;
+					aD.getTd().setFailureCounter(currFailCount);
+					if (currFailCount > 30) {
+						//putText(frame, "Tracking abandoned: too many frames without successful tracking", Point(100, 80), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(0, 0, 255), 2);
+						{
+							const std::lock_guard<mutex> lock(mt_trackbox);
+							trackStatus = 0;
+							trackingStatus[id] = trackStatus;
+							Rect2d trackBox;
+							trackBoxVec[id] = trackBox;
+						}
+					}
+				}
+			}
+
+			else {
+				int counts = aD.getTd().getCountsSinceLastSearch() + 1;
+				aD.getTd().setCountsSinceLastSearch(counts);
+
+				aD.setImgProcessed(true);
+			}
+
 		}
 	}
 }
-				/*
-				Mat inputBlob = dnn::blobFromImage(img, 0.007843, Size(300, 300), Scalar(127.5, 127.5, 127.5), false);
-				net.setInput(inputBlob, "data");
-				Mat detection = net.forward("detection_out");
-				Mat detectionMat(detection.size[2], detection.size[3], CV_32F, detection.ptr<float>());
-				ostringstream ss;
-				float confidenceThreshold = 0.1;
-				for (int i = 0; i < detectionMat.rows; i++) {
-					float confidence = detectionMat.at<float>(i, 2);
-
-					if (confidence > confidenceThreshold) {
-						int idx = static_cast<int>(detectionMat.at<float>(i, 1));
-
-						if (CLASSES[idx] == "car" | CLASSES[idx] == "bus") {
-							int xLeftBottom = static_cast<int>(detectionMat.at<float>(i, 3) * frame.cols);
-							int yLeftBottom = static_cast<int>(detectionMat.at<float>(i, 4) * frame.rows);
-							int xRightTop = static_cast<int>(detectionMat.at<float>(i, 5) * frame.cols);
-							int yRightTop = static_cast<int>(detectionMat.at<float>(i, 6) * frame.rows);
-
-							trackBox = Rect2d((int)xLeftBottom, (int)yLeftBottom,
-								(int)(xRightTop - xLeftBottom),
-								(int)(yRightTop - yLeftBottom));
-
-							bool trackBoxOk = true;
-							{
-								const std::lock_guard<mutex> lock(mt_trackbox);
-								for (int k = 0; k < trackBoxVec.size(); k++) {
-
-									if (k != id) {
-
-										Rect2d trackBox_k = trackBoxVec[k];
-										Point center_of_rect_k = (trackBox_k.br() + trackBox_k.tl())*0.5;
-										if (center_of_rect_k.x != 0 & center_of_rect_k.y != 0) {
-
-											Point center_of_rect_j = (trackBox.br() + trackBox.tl())*0.5;
-
-											Point diff = center_of_rect_j - center_of_rect_k;
-											float dist_Bboxes = cv::sqrt(diff.x*diff.x + diff.y*diff.y);
-
-											// Threshold for another tracked object should be the distance between current bounding box centers
-											if (dist_Bboxes < 100 | (center_of_rect_k.x == 0 & center_of_rect_k.y == 0)) {
-												trackBoxOk = false;
-											}
-										}
-									}
-								}
-							}
-
-			}
-
-		}
-
-		else {
-			this_thread::sleep_for(chrono::milliseconds(50));
-		}
-	}
-}*/
+		
 
 

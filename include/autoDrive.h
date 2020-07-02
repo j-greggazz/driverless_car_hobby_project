@@ -24,11 +24,14 @@ public:
 	~AutoDrive();
 	//void updateParams();
 	void updateImg(cv::Mat& img);
-	static void autoDriveThread(AutoDrive& aD, std::atomic<bool>& imgAvailable, std::atomic<bool>& stopThreads, std::vector<cv::Rect2d>& trackBoxVec, std::vector<int> &trackingStatus, std::vector<std::vector<cv::Vec4i>>& lines, std::mutex& mt_trackbox, std::mutex& lines_reserve);
-
+	static void autoDriveThread(AutoDrive& aD, std::vector<bool>& imgAvailable, std::atomic<bool>& stopThreads, std::vector<cv::Rect2d>& trackBoxVec, std::vector<int> &trackingStatus, std::vector<std::vector<cv::Vec4i>>& lines, std::mutex& imgAvailableGuard, std::mutex& trackingStatusGuard, std::mutex& mt_trackbox, std::mutex& lines_reserve);
+	void setId(int iD);
+	int getId();
 	LineDetector getLd();
 	TrafficDetector getTd();
 	CarTracker getCt();
+	void setImgProcessed(bool status);
+	bool getImgProcessed();
 
 private:
 
@@ -36,6 +39,8 @@ private:
 	TrafficDetector td;
 	CarTracker ct;
 	int id;
+	bool imgProcessed = false; 
+
 
 
 

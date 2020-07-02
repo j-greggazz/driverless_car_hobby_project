@@ -89,6 +89,7 @@ void TrafficDetector::detectObject(std::vector<cv::Rect2d>& trackBoxVec, std::mu
 					{
 						const std::lock_guard<mutex> lock(mt_trackbox);
 						trackBoxVec[id] = trackBox;
+						td_trackbox = trackBox;
 					}
 					trackingStatus = 1;
 					framesUntilDetection = 100;
@@ -116,6 +117,14 @@ int TrafficDetector::getFramesUntilDetection()
 int TrafficDetector::getFailureCounter()
 {
 	return failCounter;
+}
+int TrafficDetector::getTrackStatus()
+{
+	return trackingStatus;
+}
+cv::Rect2d TrafficDetector::getTrackbox()
+{
+	return td_trackbox;
 }
 int TrafficDetector::getCountsSinceLastSearch()
 {

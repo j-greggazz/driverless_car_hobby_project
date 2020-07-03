@@ -20,7 +20,7 @@ public:
 	void declareTracker(std::string trackerType);
 	void initTracker(cv::Mat frame, cv::Rect2d trackbox);
 	cv::Ptr<cv::Tracker> getTracker();
-	bool updateTracker(cv::Mat frame, cv::Rect2d trackBox);
+	bool updateTracker(cv::Mat& frame, cv::Rect2d& trackBox);
 	void setId(int iD);
 	void setCurrImg(cv::Mat& curr_Img);
 	cv::Mat getCurrImg();

@@ -63,7 +63,7 @@ void AutoDriveTest() {
 		vector<vector<cv::Vec4i>> lines;
 		lines.resize(num_threads);
 		AutoDrive ad = AutoDrive();
-		vector<AutoDrive> AutoDrives = {ad, ad, ad};
+		vector<AutoDrive> AutoDrives = { ad, ad, ad };
 
 		// 5. Start Setup of program
 		Mat frame;
@@ -112,22 +112,27 @@ void AutoDriveTest() {
 			// 6.6 Initialise threads: // Rewrite
 			frameThreads[i] = std::thread(AutoDrive::autoDriveThread, std::ref(AutoDrives[i]), std::ref(imgAvailable), std::ref(stop_threading), std::ref(trackBoxVec), std::ref(trackingStatus), std::ref(lines), std::ref(imgAvailGuard), std::ref(trackStatusGuard), std::ref(trackBoxGuard), std::ref(lanesGuard));
 		}
-		// autoDriveThread(AutoDrive& aD, std::vector<bool>& imgAvailable, std::atomic<bool>& stopThreads, std::vector<cv::Rect2d>& trackBoxVec, std::vector<int> &trackingStatus, std::vector<std::vector<cv::Vec4i>>& lines, std::mutex& imgAvailableGuard, std::mutex& trackingStatusGuard, std::mutex& mt_trackbox, std::mutex& lines_reserve);
-
+		
 		int i = 0;
+		int threadNum = 0;
 		while (vCap.isOpened() && quit != 113) {
 			if (processedFrames == frameCount) {
 				vCap.read(frame);
 
 				{
 					const std::lock_guard<mutex> lock(imgAvailGuard);
-					imgAvailable[i] = true;
-					AutoDrives[i].setCurrImg(frame);
+					imgAvailable[threadNum] = true;
+					AutoDrives[threadNum].setCurrImg(frame);
+					AutoDrives[threadNum].setImgIDNum(int(i/3));
 				}
+				threadNum++;
 				frameCount++;
+				if (threadNum == 3) {
+					threadNum = 0;
+				}
 
 			}
-
+			Mat curr_img;
 			for (int j = 0; j < num_threads; j++) {
 				bool wait = true;
 				if (i % num_threads == j) {
@@ -138,20 +143,29 @@ void AutoDriveTest() {
 							imgProcessed = AutoDrives[j].getImgProcessed();
 						}
 						if (imgProcessed) {
+							wait = false;
 							vector<Rect2d> trackBoxVec_temp;
 							vector<int> trackingStatus_temp;
 							vector<vector<cv::Vec4i>> lines_temp;
-							Mat curr_img;
+							
 							vector<std::string> labels_temp;
+							labels_temp.resize(num_threads);
+							LineDetector ld_;
+							TrafficDetector td_;
 							// Access all tracker/detection variables from each thread and display them on current frame:
 							{
 								const std::lock_guard<mutex> lock(trackBoxGuard);
+								ld_ = AutoDrives[j].getLd();
 								trackBoxVec_temp = trackBoxVec;
-								trackingStatus_temp = trackingStatus_temp;
+								trackingStatus_temp = trackingStatus;
 								lines_temp = lines;
-								curr_img = AutoDrives[j].getCt().getCurrImg().clone();
+								curr_img = AutoDrives[j].getCurrImg();
 								for (int k = 0; k < num_threads; ++k) {
-									labels_temp.push_back(AutoDrives[j].getTd().getTrackerLabel());
+									if (trackBoxVec_temp[k].height != 0 & trackBoxVec_temp[k].width != 0) {
+										td_ = AutoDrives[k].getTd();
+										string trackLabel = td_.getTrackerLabel();
+										labels_temp[k] = trackLabel;
+									}
 								}
 
 							}
@@ -159,25 +173,25 @@ void AutoDriveTest() {
 							for (int k = 0; k < num_threads; ++k) {
 								// Draw all trackboxes 
 								Rect2d trackbox_k = trackBoxVec_temp[k];
-								trackbox_k.x = trackbox_k.x + cb.configParams.x1_roi_car;
-								trackbox_k.y = trackbox_k.y + cb.configParams.y1_roi_car;
-								int status = trackingStatus_temp[k];
+								if (trackbox_k.height != 0 & trackbox_k.width != 0) {
+									trackbox_k.x = trackbox_k.x + cb.configParams.x1_roi_car;
+									trackbox_k.y = trackbox_k.y + cb.configParams.y1_roi_car;
+									int status = trackingStatus_temp[k];
 
-								if (status == 1) {
-									putText(curr_img, labels_temp[k], Point(trackbox_k.x, trackbox_k.y), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 0), 2);
-									rectangle(curr_img, trackbox_k, Scalar(0, 255, 0), 1);
+									if (status == 1) {
+										putText(curr_img, labels_temp[k], Point(trackbox_k.x, trackbox_k.y), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 0), 2);
+										rectangle(curr_img, trackbox_k, Scalar(0, 255, 0), 1);
+									}
+									else if (status == 2) {
+										putText(curr_img, "Tracker lost", Point(trackbox_k.x, trackbox_k.y), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 0, 255), 2);
+										rectangle(curr_img, trackbox_k, Scalar(0, 0, 255), 1);
+									}
 								}
-								else if (status == 2) {
-									putText(curr_img, "Tracker lost", Point(trackbox_k.x, trackbox_k.y), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 0, 255), 2);
-									rectangle(curr_img, trackbox_k, Scalar(0, 0, 255), 1);
+								vector<cv::Vec4i> lines_k = lines_temp[k];
+								if (lines_k.size() > 0) {
+									ld_.setLines(lines_k);
+									LineDetector::drawLines(ld_, curr_img);
 								}
-
-								imshow("Frame_i", curr_img);
-								{
-									const std::lock_guard<mutex> lock(imgAvailGuard);
-									cout << "frame " << i << endl;
-								}
-								processedFrames++;
 							}
 
 							// Draw all lines
@@ -189,6 +203,22 @@ void AutoDriveTest() {
 					}
 				}
 			}
+			{
+				const std::lock_guard<mutex> lock(trackBoxGuard);
+			
+				for (int k = 0; k < num_threads; ++k) {
+					if (AutoDrives[k].getSecondImg().rows != 0) {
+						imshow("Frame_i" + to_string(k), AutoDrives[k].getSecondImg());
+					}
+				}
+			}
+		
+			imshow("Frame_i", curr_img);
+			{
+				const std::lock_guard<mutex> lock(imgAvailGuard);
+				cout << "frame " << i << endl;
+			}
+			processedFrames++;
 			i++;
 			quit = waitKey(100);
 			if (quit == 'q') {

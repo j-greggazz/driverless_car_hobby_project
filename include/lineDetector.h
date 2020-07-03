@@ -95,11 +95,11 @@ public:
 	// Class Specific Methods
 	void preprocImg();
 	void detectLines();
-
+	void setLines(std::vector<cv::Vec4i> lines_);
 	// Implement Base-Class Virtual Method(s)
 	void detectObject();
 
-	static void drawLines(LineDetector& ld, bool detectLanes = true);
+	static void drawLines(LineDetector& ld, cv::Mat& img, bool detectLanes = true);
 
 	void setParams(preprocessParams pParams, houghParams hParams, cv::Rect roi_Bbox);
 

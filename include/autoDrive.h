@@ -33,6 +33,12 @@ public:
 	void setCt(CarTracker cT);
 	void setTd(TrafficDetector tD);
 	void setCurrImg(cv::Mat curr_Img);
+	void setImgIDNum(int id_img_num);
+	int getImgIDNum();
+	void setSecondImg(cv::Mat sec_img);
+	cv::Mat getSecondImg();
+
+
 	cv::Mat getCurrImg();
 	LineDetector getLd();
 	TrafficDetector getTd();
@@ -46,8 +52,10 @@ private:
 	TrafficDetector td;
 	CarTracker ct;
 	cv::Mat currImg;
+	cv::Mat secondaryImg;
 	int id;
 	bool imgProcessed = false; 
+	int imgID_number;
 
 
 

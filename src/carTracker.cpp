@@ -30,7 +30,7 @@ void CarTracker::initTracker(cv::Mat frame, cv::Rect2d trackBox)
 	trackerExists = true;
 }
 
-bool CarTracker::updateTracker(cv::Mat frame, cv::Rect2d trackBox)
+bool CarTracker::updateTracker(cv::Mat& frame, cv::Rect2d& trackBox)
 {
 	return tracker->update(frame, trackBox);
 }

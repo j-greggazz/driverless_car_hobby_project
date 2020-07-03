@@ -92,13 +92,18 @@ void LineDetector::detectLines()
 
 }
 
+void LineDetector::setLines(std::vector<cv::Vec4i> lines_)
+{
+	houghVar.lines = lines_;
+}
+
 void LineDetector::detectObject()
 {
 	preprocImg();
 	detectLines();
 }
 
-void LineDetector::drawLines(LineDetector & ld, bool detectLanes)
+void LineDetector::drawLines(LineDetector & ld, Mat& img, bool detectLanes)
 {
 	int x_offset = ld.get_x1_roi();
 	int y_offset = ld.get_y1_roi();
@@ -144,7 +149,7 @@ void LineDetector::drawLines(LineDetector & ld, bool detectLanes)
 				}
 			}
 			else {
-				cv::line(ld.getCurrImg(), a, b, Scalar(0, 0, 255), ld.houghVar.lineThickness, LINE_AA);
+				cv::line(img, a, b, Scalar(0, 0, 255), ld.houghVar.lineThickness, LINE_AA);
 			}
 		}
 	}
@@ -170,40 +175,40 @@ void LineDetector::drawLines(LineDetector & ld, bool detectLanes)
 
 		if (roi_lane1_pt1.y < roi_lane1_pt2.y) {
 			line1End = roi_lane1_pt1;
-			dashboardLane1.x = (ld.getCurrImg().rows - roi_lane1_pt1.y) / avgMLane1 + roi_lane1_pt1.x;
+			dashboardLane1.x = (img.rows - roi_lane1_pt1.y) / avgMLane1 + roi_lane1_pt1.x;
 		}
 
 		else {
 			line1End = roi_lane1_pt2;
-			dashboardLane1.x = (ld.getCurrImg().rows - roi_lane1_pt2.y) / avgMLane1 + roi_lane1_pt2.x;
+			dashboardLane1.x = (img.rows - roi_lane1_pt2.y) / avgMLane1 + roi_lane1_pt2.x;
 		}
 
 		if (roi_lane2_pt1.y < roi_lane2_pt2.y) {
 			line2End = roi_lane2_pt1;
-			dashboardLane2.x = (ld.getCurrImg().rows - roi_lane2_pt1.y) / avgMLane2 + roi_lane2_pt1.x;
+			dashboardLane2.x = (img.rows - roi_lane2_pt1.y) / avgMLane2 + roi_lane2_pt1.x;
 		}
 
 		else {
 			line2End = roi_lane2_pt2;
-			dashboardLane2.x = (ld.getCurrImg().rows - roi_lane2_pt2.y) / avgMLane2 + roi_lane2_pt2.x;
+			dashboardLane2.x = (img.rows - roi_lane2_pt2.y) / avgMLane2 + roi_lane2_pt2.x;
 		}
 
 		if (count_1 > 0) {
-			cv::arrowedLine(ld.getCurrImg(), dashboardLane1, line1End, Scalar(0, 255, 0), ld.houghVar.lineThickness, LINE_AA);
+			cv::arrowedLine(img, dashboardLane1, line1End, Scalar(0, 255, 0), ld.houghVar.lineThickness, LINE_AA);
 			ld.houghVar.line1_pt1 = line1End;
 			ld.houghVar.line1_pt2 = dashboardLane1;
 		}
 		else {
-			cv::arrowedLine(ld.getCurrImg(), ld.houghVar.line1_pt1, ld.houghVar.line1_pt2, Scalar(0, 0, 255), ld.houghVar.lineThickness, LINE_AA);
+			cv::arrowedLine(img, ld.houghVar.line1_pt1, ld.houghVar.line1_pt2, Scalar(0, 0, 255), ld.houghVar.lineThickness, LINE_AA);
 		}
 
 		if (count_2 > 0) {
-			cv::arrowedLine(ld.getCurrImg(), dashboardLane2, line2End, Scalar(0, 255, 0), ld.houghVar.lineThickness, LINE_AA);
+			cv::arrowedLine(img, dashboardLane2, line2End, Scalar(0, 255, 0), ld.houghVar.lineThickness, LINE_AA);
 			ld.houghVar.line2_pt1 = line2End;
 			ld.houghVar.line2_pt2 = dashboardLane2;
 		}
 		else {
-			cv::arrowedLine(ld.getCurrImg(), ld.houghVar.line2_pt1, ld.houghVar.line2_pt2, Scalar(0, 0, 255), ld.houghVar.lineThickness, LINE_AA);
+			cv::arrowedLine(img, ld.houghVar.line2_pt1, ld.houghVar.line2_pt2, Scalar(0, 0, 255), ld.houghVar.lineThickness, LINE_AA);
 		}
 	}
 

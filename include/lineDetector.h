@@ -70,6 +70,7 @@ public:
 	void setCannyImg(cv::Mat& canny_Img);
 	void setMorphImg(cv::Mat& morph_Img);
 	void setHoughImg(cv::Mat& hough_Img);
+	//void setCurrImg(cv::Mat& curr_Img);
 
 
 	// Getter Methods
@@ -89,7 +90,7 @@ public:
 	cv::Mat getCannyImg();
 	cv::Mat getMorphImg();
 	cv::Mat getHoughImg();
-
+	//cv::Mat getCurrImg();
 
 	// Class Specific Methods
 	void preprocImg();
@@ -108,6 +109,7 @@ private:
 	preprocessParams preprocessVar;
 	preprocessImgs preprocessImg;
 	houghParams houghVar;
+	//cv::Mat currImg;
 
 };
 #endif 

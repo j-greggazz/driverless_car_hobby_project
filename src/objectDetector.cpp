@@ -24,7 +24,7 @@ void ObjectDetector::setId(int iD) {
 }
 
 void ObjectDetector::setCurrImg(cv::Mat& curr_Img) {
-	currImg = curr_Img;
+	currImg = curr_Img.clone();
 }
 
 void ObjectDetector::set_x1_roi(int x1_Roi) {
@@ -45,6 +45,10 @@ void ObjectDetector::setRecHeight(int rec_Height) {
 
 void ObjectDetector::setRoiBox(cv::Rect roi_Bbox_) {
 	roi_Bbox = roi_Bbox_;
+	set_x1_roi(roi_Bbox_.x);
+	set_y1_roi(roi_Bbox_.y);
+	setRecWidth(roi_Bbox_.width);
+	setRecHeight(roi_Bbox_.height);
 }
 
 void ObjectDetector::setImgProcessed(bool img_processed) {

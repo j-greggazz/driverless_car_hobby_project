@@ -90,6 +90,13 @@ void TrafficDetector::detectObject(std::vector<cv::Rect2d>& trackBoxVec, std::mu
 						const std::lock_guard<mutex> lock(mt_trackbox);
 						trackBoxVec[id] = trackBox;
 						td_trackbox = trackBox;
+						cout << "Tracker instantiated!!: " << confidence << endl;
+						
+						ss.str("");
+						ss << confidence;
+						String conf(ss.str());
+						String label = CLASSES[idx] + ": " + conf;
+						setTrackerLabel(label);
 					}
 					trackingStatus = 1;
 					framesUntilDetection = 100;
@@ -142,12 +149,19 @@ void TrafficDetector::setCountsSinceLastSearch(int countsSince)
 {
 	countsSinceLastSearch = countsSince;
 }
-/*
-std::string TrafficDetector::getClasses()
+void TrafficDetector::setTrackerLabel(std::string trackerLabel)
+{
+	tracker_label = trackerLabel;
+}
+std::string TrafficDetector::getTrackerLabel()
+{
+	return tracker_label;
+}
+
+std::string* TrafficDetector::getClasses()
 {
 	return CLASSES;
 }
-*/
 
 
 

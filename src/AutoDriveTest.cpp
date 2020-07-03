@@ -31,7 +31,7 @@ void AutoDriveTest() {
 	string path_ = "../data/dashboardVid.mp4";
 	int startFrame = 10500;
 	bool success = initialiseVideo(vCap, path_, startFrame);
-	
+
 
 	if (success) {
 		// 2. Program flow-control variables
@@ -49,11 +49,12 @@ void AutoDriveTest() {
 		mutex imgAvailGuard;
 		mutex trackStatusGuard;
 		mutex imgProcessedGuard;
+		mutex trackDescriptionGuard;
 		atomic<bool> stop_threading = false;
 
 		const int num_threads = 3;
 		thread frameThreads[num_threads];
-				
+
 		vector<int> trackingStatus = { 0, 0, 0 }; // TODO: Need to resize/define size based on num_threads
 		vector<bool> imgAvailable = { 0, 0, 0 };
 		vector<bool> imgProcessed = { 0, 0, 0 };
@@ -61,15 +62,15 @@ void AutoDriveTest() {
 		trackBoxVec.resize(num_threads);
 		vector<vector<cv::Vec4i>> lines;
 		lines.resize(num_threads);
-
-		vector<AutoDrive> AutoDrives;
+		AutoDrive ad = AutoDrive();
+		vector<AutoDrive> AutoDrives = {ad, ad, ad};
 
 		// 5. Start Setup of program
 		Mat frame;
 		vCap.read(frame);
 		CalibParams cb;
 		CalibParams::setup(cb, frame);
-
+		//AutoDrive ad = AutoDrive();
 
 		// 6. Initialise threads
 		for (int i = 0; i < num_threads; i++) {
@@ -80,7 +81,7 @@ void AutoDriveTest() {
 			// 6.2. Declare line-detector object
 			LineDetector ld;
 			ld.setParams(cb.getPreprocessParams(), cb.getHoughParams(), cb.configParams.roi_Bbox);
-			cout << ld.getRecWidth() << "accessed private variable" << endl;
+			cout << ld.getRoiBox() << "accessed private variable" << endl;
 
 			// 6.3. Declare traffic-detector object
 			TrafficDetector td;
@@ -101,20 +102,30 @@ void AutoDriveTest() {
 			ct.declareTracker(trackerType);
 
 			// 6.5. Declare autonomous driving object as sum of all above objects
-			AutoDrive ad = AutoDrive(id, ld, td, ct);
-			AutoDrives.push_back(ad);
+			AutoDrives[i].setLd(ld);
+			AutoDrives[i].setCt(ct);
+			AutoDrives[i].setTd(td);
+			AutoDrives[i].setId(i);
+			//ad = AutoDrive(id, ld, td, ct);
+			//AutoDrives.push_back(ad);
 
 			// 6.6 Initialise threads: // Rewrite
-			//std::thread(AutoDrive::autoDriveThread, std::ref(ad), std::ref(imgAvailable), std::ref(stop_threading), std::ref(trackBoxVec), std::ref(trackingStatus), std::ref(lines), std::ref(trackBoxReserve), std::ref(laneLinesReserve));
-		}  			
-			
+			frameThreads[i] = std::thread(AutoDrive::autoDriveThread, std::ref(AutoDrives[i]), std::ref(imgAvailable), std::ref(stop_threading), std::ref(trackBoxVec), std::ref(trackingStatus), std::ref(lines), std::ref(imgAvailGuard), std::ref(trackStatusGuard), std::ref(trackBoxGuard), std::ref(lanesGuard));
+		}
+		// autoDriveThread(AutoDrive& aD, std::vector<bool>& imgAvailable, std::atomic<bool>& stopThreads, std::vector<cv::Rect2d>& trackBoxVec, std::vector<int> &trackingStatus, std::vector<std::vector<cv::Vec4i>>& lines, std::mutex& imgAvailableGuard, std::mutex& trackingStatusGuard, std::mutex& mt_trackbox, std::mutex& lines_reserve);
 
-		int i = -1;
+		int i = 0;
 		while (vCap.isOpened() && quit != 113) {
 			if (processedFrames == frameCount) {
 				vCap.read(frame);
+
+				{
+					const std::lock_guard<mutex> lock(imgAvailGuard);
+					imgAvailable[i] = true;
+					AutoDrives[i].setCurrImg(frame);
+				}
 				frameCount++;
-				i++;
+
 			}
 
 			for (int j = 0; j < num_threads; j++) {
@@ -127,30 +138,66 @@ void AutoDriveTest() {
 							imgProcessed = AutoDrives[j].getImgProcessed();
 						}
 						if (imgProcessed) {
-							// TODO
-							// Draw all trackboxes 
+							vector<Rect2d> trackBoxVec_temp;
+							vector<int> trackingStatus_temp;
+							vector<vector<cv::Vec4i>> lines_temp;
+							Mat curr_img;
+							vector<std::string> labels_temp;
+							// Access all tracker/detection variables from each thread and display them on current frame:
+							{
+								const std::lock_guard<mutex> lock(trackBoxGuard);
+								trackBoxVec_temp = trackBoxVec;
+								trackingStatus_temp = trackingStatus_temp;
+								lines_temp = lines;
+								curr_img = AutoDrives[j].getCt().getCurrImg().clone();
+								for (int k = 0; k < num_threads; ++k) {
+									labels_temp.push_back(AutoDrives[j].getTd().getTrackerLabel());
+								}
+
+							}
+
+							for (int k = 0; k < num_threads; ++k) {
+								// Draw all trackboxes 
+								Rect2d trackbox_k = trackBoxVec_temp[k];
+								trackbox_k.x = trackbox_k.x + cb.configParams.x1_roi_car;
+								trackbox_k.y = trackbox_k.y + cb.configParams.y1_roi_car;
+								int status = trackingStatus_temp[k];
+
+								if (status == 1) {
+									putText(curr_img, labels_temp[k], Point(trackbox_k.x, trackbox_k.y), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 0), 2);
+									rectangle(curr_img, trackbox_k, Scalar(0, 255, 0), 1);
+								}
+								else if (status == 2) {
+									putText(curr_img, "Tracker lost", Point(trackbox_k.x, trackbox_k.y), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 0, 255), 2);
+									rectangle(curr_img, trackbox_k, Scalar(0, 0, 255), 1);
+								}
+
+								imshow("Frame_i", curr_img);
+								{
+									const std::lock_guard<mutex> lock(imgAvailGuard);
+									cout << "frame " << i << endl;
+								}
+								processedFrames++;
+							}
+
 							// Draw all lines
 							// Display image
 						}
 						else {
-							this_thread::sleep_for(microseconds(10));
+							this_thread::sleep_for(milliseconds(10));
 						}
 					}
 				}
 			}
-
-
-
-
-
-
-
-
-
-
-
-
-
+			i++;
+			quit = waitKey(100);
+			if (quit == 'q') {
+				stop_threading = true;
+				for (int m = 0; m < 3; m++) {
+					frameThreads[m].join();
+				}
+				break;
+			}
 
 
 		}

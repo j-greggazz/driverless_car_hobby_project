@@ -35,44 +35,45 @@ void LineDetector::preprocImg()
 
 	// 3. Canny Edge Detection
 	if (!temp.empty()) {
-		Canny(temp, temp, getCannyLowThresh(), getCannyHighThresh(), getCannyKernelSize());
+		Canny(temp, temp, preprocessVar.cannyLowThresh, preprocessVar.cannyHighTresh, preprocessVar.cannyKernelSize + 3);
 		setCannyImg(temp.clone());
 	}
 
 	// 4. Morphological Operations 1
 	if (getMorphTransformType1() + 1 > 3) {
-		Mat str_element = getStructuringElement(getMorphElemShape(), Size(2 * getMorphKernelSize1() + 1, 2 * getMorphKernelSize1() + 1), Point(getMorphKernelSize1(), getMorphKernelSize1()));
-		morphologyEx(temp, temp, getMorphTransformType1() - 1, str_element);
+		Mat str_element = getStructuringElement(preprocessVar.morphElemShape, Size(2 * preprocessVar.morphKernelSize1 + 1, 2 * preprocessVar.morphKernelSize1 + 1), Point(preprocessVar.morphKernelSize1, preprocessVar.morphKernelSize1));
+		morphologyEx(temp, temp, preprocessVar.morphTransformType1 - 1, str_element);
 	}
 
 	else if (getMorphTransformType1() + 1 == 1) {
-		Mat element = getStructuringElement(MORPH_CROSS, Size(getMorphKernelSize1() + 1, getMorphKernelSize1() + 1));//, Point(edgeConfig->kernel_morph_size, edgeConfig->kernel_morph_size));
+		Mat element = getStructuringElement(MORPH_CROSS, Size(preprocessVar.morphKernelSize1 + 1, preprocessVar.morphKernelSize1 + 1));//, Point(edgeConfig->kernel_morph_size, edgeConfig->kernel_morph_size));
 		erode(temp, temp, element, Point(-1, -1), 2, 1, 1);
 	}
 
 	else if (getMorphTransformType1() + 1 == 2) {
-		Mat element = getStructuringElement(MORPH_RECT, Size(getMorphKernelSize1() + 1, getMorphKernelSize1() + 1), Point(getMorphKernelSize1(), getMorphKernelSize1()));
+		Mat element = getStructuringElement(MORPH_RECT, Size(preprocessVar.morphKernelSize1 + 1, preprocessVar.morphKernelSize1 + 1), Point(preprocessVar.morphKernelSize1, preprocessVar.morphKernelSize1));
 		dilate(temp, temp, element);
 	}
 
 	// 5. Morphological Operations 2
 	if (getMorphTransformType2() + 1 > 3) {
-		Mat element = getStructuringElement(getMorphElemShape(), Size(2 * getMorphKernelSize2() + 1, 2 * getMorphKernelSize2() + 1), Point(getMorphKernelSize2(), getMorphKernelSize2()));
-		morphologyEx(temp, temp, getMorphTransformType1() - 1, element);
+		Mat element = getStructuringElement(preprocessVar.morphElemShape, Size(2 * preprocessVar.morphKernelSize2 + 1, 2 * preprocessVar.morphKernelSize2 + 1), Point(preprocessVar.morphKernelSize2, preprocessVar.morphKernelSize2));
+		morphologyEx(temp, temp, preprocessVar.morphTransformType2 - 1, element);
 	}
 
-	else if (getMorphTransformType1() + 1 == 1) {
-		Mat element = getStructuringElement(MORPH_CROSS, Size(getMorphKernelSize2() + 1, getMorphKernelSize2() + 1));//, Point(edgeConfig->kernel_morph_size, edgeConfig->kernel_morph_size));
+	else if (preprocessVar.morphTransformType2 + 1 == 1) {
+		Mat element = getStructuringElement(MORPH_CROSS, Size(preprocessVar.morphKernelSize2 + 1, preprocessVar.morphKernelSize2 + 1));//, Point(edgeConfig->kernel_morph_size, edgeConfig->kernel_morph_size));
 		erode(temp, temp, element, Point(-1, -1), 2, 1, 1);
 	}
 
-	else if (getMorphTransformType1() + 1 == 2) {
-		Mat element = getStructuringElement(MORPH_RECT, Size(getMorphKernelSize2() + 1, getMorphKernelSize2() + 1), Point(getMorphKernelSize1(), getMorphKernelSize2()));
+	else if (preprocessVar.morphTransformType2 + 1 == 2) {
+		Mat element = getStructuringElement(MORPH_RECT, Size(preprocessVar.morphKernelSize2 + 1, preprocessVar.morphKernelSize2 + 1), Point(preprocessVar.morphKernelSize2, preprocessVar.morphKernelSize2));
 		dilate(temp, temp, element);
 	}
 
 	// 6. Set Input Image to Hough Transform
-	setHoughImg(temp);
+	preprocessImg.houghImg = temp;
+	//setHoughImg(temp);
 }
 
 void LineDetector::detectLines()
@@ -86,7 +87,7 @@ void LineDetector::detectLines()
 		//ignore here for now
 	}*/
 	std::vector<cv::Vec4i> linesTemp;
-	cv::HoughLinesP(getHoughImg(), linesTemp, 1, CV_PI / 180, houghVar.minVotes, houghVar.minLineLength, houghVar.maxLineGap);
+	cv::HoughLinesP(preprocessImg.houghImg, linesTemp, 1, CV_PI / 180, houghVar.minVotes, houghVar.minLineLength, houghVar.maxLineGap);
 	houghVar.lines = linesTemp;
 
 }
@@ -299,6 +300,12 @@ void LineDetector::setHoughImg(cv::Mat & hough_Img)
 	preprocessImg.houghImg = hough_Img;
 }
 
+/*
+void LineDetector::setCurrImg(cv::Mat & curr_Img)
+{
+	currImg = curr_Img;
+}
+*/
 int LineDetector::getCannyKernelSize()
 {
 	return preprocessVar.cannyKernelSize;
@@ -375,13 +382,20 @@ cv::Mat LineDetector::getHoughImg()
 	return preprocessImg.houghImg;
 }
 
+/*
+cv::Mat LineDetector::getCurrImg()
+{
+	return currImg;
+}
+*/
 // Parameter initialisation
 
  void LineDetector::setParams(preprocessParams pParams, houghParams hParams, cv::Rect roi_Bbox)
 {
 	 houghVar = hParams;
 	 preprocessVar = pParams;
-	 roi_Bbox = roi_Bbox;
+	 ObjectDetector::setRoiBox(roi_Bbox);
+	 //roi_Bbox = roi_Bbox;
 	 /*
 	 lD.set_x1_roi();
 	 lD.set_y1_roi();

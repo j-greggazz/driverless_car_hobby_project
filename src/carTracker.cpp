@@ -42,12 +42,12 @@ void CarTracker::setId(int iD)
 
 void CarTracker::setCurrImg(cv::Mat & curr_Img)
 {
-
+	currImg = curr_Img.clone();
 }
 
 cv::Mat CarTracker::getCurrImg()
 {
-	return cv::Mat();
+	return currImg;
 }
 
 cv::Ptr<cv::Tracker> CarTracker::getTracker()

@@ -55,4 +55,9 @@ cv::Ptr<cv::Tracker> CarTracker::getTracker()
 	return tracker;
 }
 
+void CarTracker::setTracker(cv::Ptr<cv::Tracker> tracker_)
+{
+	tracker = tracker_;
+}
+
 

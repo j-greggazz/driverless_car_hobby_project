@@ -115,6 +115,7 @@ void AutoDrive::autoDriveThread(AutoDrive& aD, vector<bool>& imgAvail, atomic<bo
 	//td_.setCountsSinceLastSearch(30);
 	int countsSinceLastSearch = 20;
 	int failureCounter = 0;
+	bool trackerExists = false;
 
 	//dnn::Net net = aD.getTd().getDnnNet();
 
@@ -136,7 +137,7 @@ void AutoDrive::autoDriveThread(AutoDrive& aD, vector<bool>& imgAvail, atomic<bo
 				const std::lock_guard<mutex> lock(imgAvailableGuard);
 				aD.setImgProcessed(false);
 				imgAvail[id] = false;
-				img = aD.getCurrImg();
+				img = aD.getCurrImg().clone();
 				cout << aD.getImgIDNum() << endl;
 			}
 
@@ -162,22 +163,28 @@ void AutoDrive::autoDriveThread(AutoDrive& aD, vector<bool>& imgAvail, atomic<bo
 				if (trackStatus == 1) {
 					trackBox = td_.getTrackbox();
 					CarTracker ct_ = aD.getCt();
-					ct_.initTracker(img, trackBox);
+					ct_.initTracker(img(td_.getRoiBox()), trackBox);
 					aD.setCt(ct_);
 					{
 						const std::lock_guard<mutex> lock(trackingStatusGuard);
 						trackingStatus[id] = 1;
+						trackerExists = true;
 					}
 				}
 			}
 
-			else if (trackStatus == 1) { // DO NOT LET IT SET A NEW TRACKER!! IT UPDATES ON A DIFFERENT AREA AFTER TRACKER LOST??
+			else if (trackerExists) { // DO NOT LET IT SET A NEW TRACKER!! IT UPDATES ON A DIFFERENT AREA AFTER TRACKER LOST??
 				CarTracker ct_ = aD.getCt();
+				TrafficDetector td_ = aD.getTd();
 				//ct_.initTracker(img, trackBox);
 				bool updateSuccess;
 				{
 					const std::lock_guard<mutex> lock(mt_trackbox);
-					updateSuccess = ct_.updateTracker(img, trackBoxVec[id]);
+					cv::Ptr<cv::Tracker> tracker = ct_.getTracker();
+					cout << id << endl;
+					updateSuccess = tracker->update(img(td_.getRoiBox()), trackBoxVec[id]);
+					ct_.setTracker(tracker);
+					//updateSuccess = ct_.updateTracker(img, trackBoxVec[id]);
 					//rectangle(img, trackBoxVec[id], Scalar(0, 255, 0), 1);
 					aD.setSecondImg(img);
 				}
@@ -196,26 +203,25 @@ void AutoDrive::autoDriveThread(AutoDrive& aD, vector<bool>& imgAvail, atomic<bo
 
 				else {
 					failureCounter++;
-					{
-						const std::lock_guard<mutex> lock(trackingStatusGuard);
-						trackingStatus[id] = 2;
+					if (failureCounter > 5) {
+						//putText(frame, "Tracking abandoned: too many frames without successful tracking", Point(100, 80), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(0, 0, 255), 2);
+						{
+							const std::lock_guard<mutex> lock(mt_trackbox);
+							trackStatus = 0;
+							trackingStatus[id] = trackStatus;
+							Rect2d trackBox;
+							trackBoxVec[id] = trackBox;
+						}
+					}
+					else {
+						{
+							const std::lock_guard<mutex> lock(trackingStatusGuard);
+							trackingStatus[id] = 2;
+						}
 					}
 				}
 			}
-
-			else if (trackStatus == 2) {
-				failureCounter++;
-				if (failureCounter > 10) {
-					//putText(frame, "Tracking abandoned: too many frames without successful tracking", Point(100, 80), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(0, 0, 255), 2);
-					{
-						const std::lock_guard<mutex> lock(mt_trackbox);
-						trackStatus = 0;
-						trackingStatus[id] = trackStatus;
-						Rect2d trackBox;
-						trackBoxVec[id] = trackBox;
-					}
-				}
-			}
+		
 			else {
 				countsSinceLastSearch++;
 			}

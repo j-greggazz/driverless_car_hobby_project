@@ -203,16 +203,7 @@ void AutoDriveTest() {
 					}
 				}
 			}
-			{
-				const std::lock_guard<mutex> lock(trackBoxGuard);
 			
-				for (int k = 0; k < num_threads; ++k) {
-					if (AutoDrives[k].getSecondImg().rows != 0) {
-						imshow("Frame_i" + to_string(k), AutoDrives[k].getSecondImg());
-					}
-				}
-			}
-		
 			imshow("Frame_i", curr_img);
 			{
 				const std::lock_guard<mutex> lock(imgAvailGuard);

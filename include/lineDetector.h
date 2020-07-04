@@ -50,46 +50,12 @@ public:
 	LineDetector();
 	~LineDetector();
 
-	// Setter Methods
-	//void setProcessingParams(struct )
-	void setCannyKernelSize(int canny_KernelSize);
-	void setCannyLowThresh(int canny_LowThresh);
-	void setCannyHighThresh(int canny_HighThresh);
-	void setGaussKernelSize(int gauss_KernelSize);
-	void setMorphElemShape(int morph_ElemShape);
-	void setMorphTransformType1(int morph_TransformType1);
-	void setMorphTransformType2(int morph_TransformType2);
-	void setMorphKernelSize1(int morph_KernelSize1);
-	void setMorphKernelSize2(int morph_KernelSize2);
+
+
 	preprocessParams getPreprocessParams();
 	houghParams getHoughParams();
 
-	void setRoiImg(cv::Mat& roi_Img);
-	void setBlurImg(cv::Mat& blur_Img);
-	void setGrayImg(cv::Mat& gray_Img);
-	void setCannyImg(cv::Mat& canny_Img);
-	void setMorphImg(cv::Mat& morph_Img);
-	void setHoughImg(cv::Mat& hough_Img);
-	//void setCurrImg(cv::Mat& curr_Img);
 
-
-	// Getter Methods
-	int getCannyKernelSize();
-	int getCannyLowThresh();
-	int getCannyHighThresh();
-	int getGaussKernelSize();
-	int getMorphElemShape();
-	int getMorphTransformType1();
-	int getMorphTransformType2();
-	int getMorphKernelSize1();
-	int getMorphKernelSize2();
-
-	cv::Mat getRoiImg();
-	cv::Mat getBlurImg();
-	cv::Mat getGrayImg();
-	cv::Mat getCannyImg();
-	cv::Mat getMorphImg();
-	cv::Mat getHoughImg();
 	//cv::Mat getCurrImg();
 
 	// Class Specific Methods

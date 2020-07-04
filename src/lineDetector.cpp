@@ -23,40 +23,38 @@ LineDetector::~LineDetector()
 void LineDetector::preprocImg()
 {
 	cv::Mat temp;
-	// 1. Define new ROI img
-	//setRoiImg(getCurrImg()(getRoiBox()));
 	preprocessImg.roiImg = getCurrImg()(getRoiBox()).clone();
 
 	// 2. Blur
-	if (getGaussKernelSize() > 0) {
-		cvtColor(getRoiImg(), temp, COLOR_BGR2GRAY);
-		blur(temp, temp, Size(getGaussKernelSize(), getGaussKernelSize()), Point(-1, -1));
+	if (preprocessVar.gaussKernelSize > 0) {
+		cvtColor(preprocessImg.roiImg, temp, COLOR_BGR2GRAY);
+		blur(temp, temp, Size(preprocessVar.gaussKernelSize, preprocessVar.gaussKernelSize), Point(-1, -1));
 	}
 
 	// 3. Canny Edge Detection
 	if (!temp.empty()) {
 		Canny(temp, temp, preprocessVar.cannyLowThresh, preprocessVar.cannyHighTresh, preprocessVar.cannyKernelSize + 3);
-		setCannyImg(temp.clone());
+		//setCannyImg(temp.clone());
 	}
 
 	// 4. Morphological Operations 1
-	if (getMorphTransformType1() + 1 > 3) {
+	if (preprocessVar.morphTransformType1 + 1 > 3) {
 		Mat str_element = getStructuringElement(preprocessVar.morphElemShape, Size(2 * preprocessVar.morphKernelSize1 + 1, 2 * preprocessVar.morphKernelSize1 + 1), Point(preprocessVar.morphKernelSize1, preprocessVar.morphKernelSize1));
 		morphologyEx(temp, temp, preprocessVar.morphTransformType1 - 1, str_element);
 	}
 
-	else if (getMorphTransformType1() + 1 == 1) {
+	else if (preprocessVar.morphTransformType1 + 1 == 1) {
 		Mat element = getStructuringElement(MORPH_CROSS, Size(preprocessVar.morphKernelSize1 + 1, preprocessVar.morphKernelSize1 + 1));//, Point(edgeConfig->kernel_morph_size, edgeConfig->kernel_morph_size));
 		erode(temp, temp, element, Point(-1, -1), 2, 1, 1);
 	}
 
-	else if (getMorphTransformType1() + 1 == 2) {
+	else if (preprocessVar.morphTransformType1 + 1 == 2) {
 		Mat element = getStructuringElement(MORPH_RECT, Size(preprocessVar.morphKernelSize1 + 1, preprocessVar.morphKernelSize1 + 1), Point(preprocessVar.morphKernelSize1, preprocessVar.morphKernelSize1));
 		dilate(temp, temp, element);
 	}
 
 	// 5. Morphological Operations 2
-	if (getMorphTransformType2() + 1 > 3) {
+	if (preprocessVar.morphTransformType2 + 1 > 3) {
 		Mat element = getStructuringElement(preprocessVar.morphElemShape, Size(2 * preprocessVar.morphKernelSize2 + 1, 2 * preprocessVar.morphKernelSize2 + 1), Point(preprocessVar.morphKernelSize2, preprocessVar.morphKernelSize2));
 		morphologyEx(temp, temp, preprocessVar.morphTransformType2 - 1, element);
 	}
@@ -217,54 +215,6 @@ void LineDetector::drawLines(LineDetector & ld, Mat& img, bool detectLanes)
 
 // Implementations Getters & Setters
 
-void LineDetector::setCannyKernelSize(int canny_KernelSize)
-{
-	preprocessVar.cannyKernelSize = canny_KernelSize;
-}
-
-void LineDetector::setCannyLowThresh(int canny_LowThresh)
-{
-	preprocessVar.cannyLowThresh = canny_LowThresh;
-}
-
-void LineDetector::setCannyHighThresh(int canny_HighThresh)
-{
-	preprocessVar.cannyHighTresh = canny_HighThresh;
-}
-
-void LineDetector::setGaussKernelSize(int gauss_KernelSize)
-{
-	preprocessVar.gaussKernelSize = gauss_KernelSize;
-}
-
-void LineDetector::setMorphElemShape(int morph_ElemShape)
-{
-	preprocessVar.morphElemShape = morph_ElemShape;
-}
-
-void LineDetector::setMorphTransformType1(int morph_TransformType1)
-{
-	preprocessVar.morphTransformType1 = morph_TransformType1;
-}
-
-void LineDetector::setMorphTransformType2(int morph_TransformType2)
-{
-	preprocessVar.morphTransformType2 = morph_TransformType2;
-}
-
-
-
-
-void LineDetector::setMorphKernelSize1(int morph_KernelSize1)
-{
-	preprocessVar.morphKernelSize1 = morph_KernelSize1;
-}
-
-void LineDetector::setMorphKernelSize2(int morph_KernelSize2)
-{
-	preprocessVar.morphKernelSize2 = morph_KernelSize2;
-}
-
 LineDetector::preprocessParams LineDetector::getPreprocessParams()
 {
 	return preprocessVar;
@@ -275,124 +225,11 @@ LineDetector::houghParams LineDetector::getHoughParams()
 	return houghVar;
 }
 
-void LineDetector::setRoiImg(cv::Mat & roi_Img)
-{
-	preprocessImg.roiImg = roi_Img;
-}
-
-void LineDetector::setBlurImg(cv::Mat & blur_Img)
-{
-	preprocessImg.blurImg = blur_Img;
-}
-
-void LineDetector::setGrayImg(cv::Mat & gray_Img)
-{
-	preprocessImg.grayImg = gray_Img;
-}
-
-void LineDetector::setCannyImg(cv::Mat & canny_Img)
-{
-	preprocessImg.cannyImg = canny_Img;
-}
-
-void LineDetector::setMorphImg(cv::Mat & morph_Img)
-{
-	preprocessImg.morphImg = morph_Img;
-}
-
-void LineDetector::setHoughImg(cv::Mat & hough_Img)
-{
-	preprocessImg.houghImg = hough_Img;
-}
-
-/*
-void LineDetector::setCurrImg(cv::Mat & curr_Img)
-{
-	currImg = curr_Img;
-}
-*/
-int LineDetector::getCannyKernelSize()
-{
-	return preprocessVar.cannyKernelSize;
-}
-
-int LineDetector::getCannyLowThresh()
-{
-	return preprocessVar.cannyLowThresh;
-}
-
-int LineDetector::getCannyHighThresh()
-{
-	return preprocessVar.cannyHighTresh;
-}
-
-int LineDetector::getGaussKernelSize()
-{
-	return preprocessVar.gaussKernelSize;
-}
-
-int LineDetector::getMorphElemShape()
-{
-	return preprocessVar.morphElemShape;
-}
-
-int LineDetector::getMorphTransformType1()
-{
-	return preprocessVar.morphTransformType1;
-}
-
-int LineDetector::getMorphTransformType2()
-{
-	return preprocessVar.morphTransformType2;
-}
 
 
-int LineDetector::getMorphKernelSize1()
-{
-	return preprocessVar.morphKernelSize1;
-}
 
-int LineDetector::getMorphKernelSize2()
-{
-	return preprocessVar.morphKernelSize2;
-}
 
-cv::Mat LineDetector::getRoiImg()
-{
-	return preprocessImg.roiImg;
-}
 
-cv::Mat LineDetector::getBlurImg()
-{
-	return preprocessImg.blurImg;
-}
-
-cv::Mat LineDetector::getGrayImg()
-{
-	return preprocessImg.grayImg;
-}
-
-cv::Mat LineDetector::getCannyImg()
-{
-	return preprocessImg.cannyImg;
-}
-
-cv::Mat LineDetector::getMorphImg()
-{
-	return preprocessImg.morphImg;
-}
-
-cv::Mat LineDetector::getHoughImg()
-{
-	return preprocessImg.houghImg;
-}
-
-/*
-cv::Mat LineDetector::getCurrImg()
-{
-	return currImg;
-}
-*/
 // Parameter initialisation
 
  void LineDetector::setParams(preprocessParams pParams, houghParams hParams, cv::Rect roi_Bbox)
@@ -400,23 +237,5 @@ cv::Mat LineDetector::getCurrImg()
 	 houghVar = hParams;
 	 preprocessVar = pParams;
 	 ObjectDetector::setRoiBox(roi_Bbox);
-	 //roi_Bbox = roi_Bbox;
-	 /*
-	 lD.set_x1_roi();
-	 lD.set_y1_roi();
-	 lD.setRecWidth();
-	 lD.setRecHeight();
-	 lD.setRoiBox();
-	 lD.setCannyKernelSize();
-	 lD.setCannyLowThresh();
-	 lD.setCannyHighThresh();
-	 lD.setGaussKernelSize();
-	 lD.setMorphElemShape();
-	 lD.setMorphTransformType1();
-	 lD.setMorphTransformType2();
-	 lD.setMorphOperation1();
-	 lD.setMorphOperation2();
-	 lD.setMorphKernelSize1();
-	 lD.setMorphKernelSize2();
-	 */
+
 }

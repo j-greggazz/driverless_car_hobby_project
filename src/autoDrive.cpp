@@ -102,8 +102,6 @@ bool AutoDrive::getImgProcessed()
 }
 
 void AutoDrive::autoDriveThread(AutoDrive& aD, vector<bool>& imgAvail, atomic<bool>& stopThreads, vector<Rect2d>& trackBoxVec, vector<int> &trackingStatus, vector<vector<Vec4i>>& lines, mutex& imgAvailableGuard, mutex& trackingStatusGuard, mutex& mt_trackbox, mutex& lines_reserve) {
-	//void AutoDrive::autoDriveThread(AutoDrive& aD, atomic<bool>& imgAvail, atomic<bool>& stopThreads, vector<Rect2d>& trackBoxVec, vector<int> &trackingStatus, vector<vector<Vec4i>>& lines, mutex& mt_trackbox, mutex& lines_reserve) {
-
 
 	int id = aD.getId();
 	int trackStatus;
@@ -111,13 +109,12 @@ void AutoDrive::autoDriveThread(AutoDrive& aD, vector<bool>& imgAvail, atomic<bo
 	//const std::string CLASSES = *aD.getTd().getClasses();
 	std::string CLASSES[21] = { "background", "aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable",
 									"dog", "horse", "motorbike", "person", "pottedplant", "sheep","sofa", "train", "tvmonitor" };
-	//TrafficDetector td_ = aD.getTd();
-	//td_.setCountsSinceLastSearch(30);
+
 	int countsSinceLastSearch = 20;
 	int failureCounter = 0;
 	bool trackerExists = false;
-
-	//dnn::Net net = aD.getTd().getDnnNet();
+	TrafficDetector td_ = aD.getTd();
+	Rect2d roi_tracker_box = td_.getRoiBox();
 
 	while (true) {
 
@@ -161,9 +158,9 @@ void AutoDrive::autoDriveThread(AutoDrive& aD, vector<bool>& imgAvail, atomic<bo
 				trackStatus = td_.getTrackStatus();
 				aD.setTd(td_);
 				if (trackStatus == 1) {
-					trackBox = td_.getTrackbox();
 					CarTracker ct_ = aD.getCt();
-					ct_.initTracker(img(td_.getRoiBox()), trackBox);
+					trackBox = td_.getTrackbox();
+					ct_.initTracker(img(roi_tracker_box), trackBox);
 					aD.setCt(ct_);
 					{
 						const std::lock_guard<mutex> lock(trackingStatusGuard);
@@ -175,18 +172,11 @@ void AutoDrive::autoDriveThread(AutoDrive& aD, vector<bool>& imgAvail, atomic<bo
 
 			else if (trackerExists) { // DO NOT LET IT SET A NEW TRACKER!! IT UPDATES ON A DIFFERENT AREA AFTER TRACKER LOST??
 				CarTracker ct_ = aD.getCt();
-				TrafficDetector td_ = aD.getTd();
-				//ct_.initTracker(img, trackBox);
+
 				bool updateSuccess;
 				{
 					const std::lock_guard<mutex> lock(mt_trackbox);
-					cv::Ptr<cv::Tracker> tracker = ct_.getTracker();
-					cout << id << endl;
-					updateSuccess = tracker->update(img(td_.getRoiBox()), trackBoxVec[id]);
-					ct_.setTracker(tracker);
-					//updateSuccess = ct_.updateTracker(img, trackBoxVec[id]);
-					//rectangle(img, trackBoxVec[id], Scalar(0, 255, 0), 1);
-					aD.setSecondImg(img);
+					updateSuccess = ct_.updateTracker(img(roi_tracker_box), trackBoxVec[id]);
 				}
 				aD.setCt(ct_);
 				if (updateSuccess)

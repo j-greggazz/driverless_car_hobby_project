@@ -20,28 +20,7 @@ AutoDrive::~AutoDrive()
 {
 }
 
-void AutoDrive::setImgIDNum(int id_img_num)
-{
-	imgID_number = id_img_num;
-}
-int AutoDrive::getImgIDNum()
-{
-	return imgID_number;
-}
-void AutoDrive::setSecondImg(cv::Mat sec_img)
-{
-	secondaryImg = sec_img;
-}
-cv::Mat AutoDrive::getSecondImg()
-{
-	return secondaryImg;
-}
-void AutoDrive::updateImg(cv::Mat& img)
-{
-	ld.setCurrImg(img);
-	td.setCurrImg(img);
-	ct.setCurrImg(img);
-}
+
 
 int AutoDrive::getId()
 {
@@ -103,18 +82,23 @@ bool AutoDrive::getImgProcessed()
 
 void AutoDrive::autoDriveThread(AutoDrive& aD, vector<bool>& imgAvail, atomic<bool>& stopThreads, vector<Rect2d>& trackBoxVec, vector<int> &trackingStatus, vector<vector<Vec4i>>& lines, mutex& imgAvailableGuard, mutex& trackingStatusGuard, mutex& mt_trackbox, mutex& lines_reserve) {
 
+	// Reusable variables
 	int id = aD.getId();
 	int trackStatus;
 	Rect2d trackBox;
+	Rect2d trackBox_empty;
+	bool updateSuccess;
+	bool imgAvailable;
+	LineDetector ld_;
+	CarTracker ct_;
+	TrafficDetector td_ = aD.getTd();
+	Rect2d roi_tracker_box = td_.getRoiBox();
 	//const std::string CLASSES = *aD.getTd().getClasses();
 	std::string CLASSES[21] = { "background", "aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable",
 									"dog", "horse", "motorbike", "person", "pottedplant", "sheep","sofa", "train", "tvmonitor" };
-
 	int countsSinceLastSearch = 20;
 	int failureCounter = 0;
-	bool trackerExists = false;
-	TrafficDetector td_ = aD.getTd();
-	Rect2d roi_tracker_box = td_.getRoiBox();
+
 
 	while (true) {
 
@@ -122,7 +106,7 @@ void AutoDrive::autoDriveThread(AutoDrive& aD, vector<bool>& imgAvail, atomic<bo
 			break;
 			return;
 		}
-		bool imgAvailable = false;
+		imgAvailable = false;
 		{
 			const std::lock_guard<mutex> lock(imgAvailableGuard);
 			imgAvailable = imgAvail[id];
@@ -135,11 +119,10 @@ void AutoDrive::autoDriveThread(AutoDrive& aD, vector<bool>& imgAvail, atomic<bo
 				aD.setImgProcessed(false);
 				imgAvail[id] = false;
 				img = aD.getCurrImg().clone();
-				cout << aD.getImgIDNum() << endl;
 			}
 
 			// Step 1: Lane Detection
-			LineDetector ld_ = aD.getLd();
+			ld_ = aD.getLd();
 			ld_.detectObject();
 
 			{
@@ -149,31 +132,30 @@ void AutoDrive::autoDriveThread(AutoDrive& aD, vector<bool>& imgAvail, atomic<bo
 			}
 
 			// Optional Step 2: If no tracker instantiated, keep detecting
-			//if (trackStatus == 0 & aD.getTd().getCountsSinceLastSearch() >= 30)  // No object currently tracked and detection has not been run for 40 frames
+		
 			if (trackStatus == 0 & countsSinceLastSearch >= 20)
 			{
 				countsSinceLastSearch = 0;
-				TrafficDetector td_ = aD.getTd();
+				td_ = aD.getTd();
 				td_.detectObject(trackBoxVec, mt_trackbox);
 				trackStatus = td_.getTrackStatus();
 				aD.setTd(td_);
 				if (trackStatus == 1) {
-					CarTracker ct_ = aD.getCt();
+					ct_ = aD.getCt();
 					trackBox = td_.getTrackbox();
 					ct_.initTracker(img(roi_tracker_box), trackBox);
 					aD.setCt(ct_);
 					{
 						const std::lock_guard<mutex> lock(trackingStatusGuard);
 						trackingStatus[id] = 1;
-						trackerExists = true;
+						trackStatus = 1;
 					}
 				}
 			}
 
-			else if (trackerExists) { // DO NOT LET IT SET A NEW TRACKER!! IT UPDATES ON A DIFFERENT AREA AFTER TRACKER LOST??
-				CarTracker ct_ = aD.getCt();
+			else if ((trackStatus == 1) | (trackStatus == 2)){ // DO NOT LET IT SET A NEW TRACKER!! IT UPDATES ON A DIFFERENT AREA AFTER TRACKER LOST??
+				ct_ = aD.getCt();
 
-				bool updateSuccess;
 				{
 					const std::lock_guard<mutex> lock(mt_trackbox);
 					updateSuccess = ct_.updateTracker(img(roi_tracker_box), trackBoxVec[id]);
@@ -186,7 +168,6 @@ void AutoDrive::autoDriveThread(AutoDrive& aD, vector<bool>& imgAvail, atomic<bo
 						{
 							const std::lock_guard<mutex> lock(trackingStatusGuard);
 							trackingStatus[id] = 1;
-
 						}
 					}
 				}
@@ -199,8 +180,7 @@ void AutoDrive::autoDriveThread(AutoDrive& aD, vector<bool>& imgAvail, atomic<bo
 							const std::lock_guard<mutex> lock(mt_trackbox);
 							trackStatus = 0;
 							trackingStatus[id] = trackStatus;
-							Rect2d trackBox;
-							trackBoxVec[id] = trackBox;
+							trackBoxVec[id] = trackBox_empty;
 						}
 					}
 					else {
@@ -217,8 +197,6 @@ void AutoDrive::autoDriveThread(AutoDrive& aD, vector<bool>& imgAvail, atomic<bo
 			}
 			aD.setImgProcessed(true);
 		}
-
-		//waitKey(100);
 		this_thread::sleep_for(chrono::milliseconds(10));
 	}
 

@@ -3,8 +3,6 @@ using namespace cv;
 using namespace std;
 /* -------------------- Preprocessing --------------------*/
 
-
-
 void CalibParams::houghCParameters() {
 
 	namedWindow(this->configParams.houghCWindowName, WINDOW_AUTOSIZE);

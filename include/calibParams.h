@@ -9,7 +9,6 @@ class CalibParams : public LineDetector, CarTracker {
 
 public:
 
-
 	struct ConfigParams {
 
 		// Window Properties
@@ -92,21 +91,9 @@ public:
 		int minDistBtwCenters = 10;
 		int dp = 2; // Inverse ratio of the accumulator resolution to the image resolution
 
-		// Tracking & detection variables:
-		std::vector<cv::Rect> trackedObjects;
-		cv::Ptr<cv::Tracker> tracker;
-		cv::dnn::Net net;
-
-		bool trackerExists = false;
-		bool imgProcessed = true;
-
+		// Close-windows 
 		bool terminateSetup = false;
 	};
-
-
-	// member variables
-	ConfigParams configParams;
-	
 
 	/* -------------------- Preprocessing --------------------*/
 	//  -- Setup --
@@ -144,7 +131,8 @@ public:
 	houghParams getHoughParams();
 
 //private:
-
+	// member variables
+	ConfigParams configParams;
 	preprocessParams preprocessVar;
 	preprocessImgs preprocessImg;
 	houghParams houghVar;

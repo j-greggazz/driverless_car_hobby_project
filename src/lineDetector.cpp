@@ -4,22 +4,6 @@ using namespace cv;
 using namespace std;
 
 
-LineDetector::LineDetector(int iD)
-{
-	setId(iD);
-}
-
-
-LineDetector::LineDetector()
-{
-}
-
-LineDetector::~LineDetector()
-{
-}
-
-
-
 void LineDetector::preprocImg()
 {
 	cv::Mat temp;
@@ -69,9 +53,8 @@ void LineDetector::preprocImg()
 		dilate(temp, temp, element);
 	}
 
-	// 6. Set Input Image to Hough Transform
+	// 6. Set Input Image for hough transformation
 	preprocessImg.houghImg = temp;
-	//setHoughImg(temp);
 }
 
 void LineDetector::detectLines()
@@ -90,21 +73,16 @@ void LineDetector::detectLines()
 
 }
 
-void LineDetector::setLines(std::vector<cv::Vec4i> lines_)
-{
-	houghVar.lines = lines_;
-}
-
 void LineDetector::detectObject()
 {
 	preprocImg();
 	detectLines();
 }
 
-void LineDetector::drawLines(LineDetector & ld, Mat& img, bool detectLanes)
+void LineDetector::drawLines(Mat& img, bool detectLanes)
 {
-	int x_offset = ld.get_x1_roi();
-	int y_offset = ld.get_y1_roi();
+	int x_offset = getRoiBox().x;
+	int y_offset = getRoiBox().y;
 	float lane_1_m = 0.;
 	float lane_2_m = 0.;
 	int count_1 = 0;
@@ -113,7 +91,7 @@ void LineDetector::drawLines(LineDetector & ld, Mat& img, bool detectLanes)
 	int count_2 = 0;
 	Point roi_lane1_pt1, roi_lane1_pt2, roi_lane2_pt1, roi_lane2_pt2;
 
-	for (auto it = ld.houghVar.lines.begin(); it != ld.houghVar.lines.end(); ++it) {
+	for (auto it = houghVar.lines.begin(); it != houghVar.lines.end(); ++it) {
 		Point a, b;
 		auto line = *it;
 		int x = line[0] + line[1] + line[2] + line[3];
@@ -147,7 +125,7 @@ void LineDetector::drawLines(LineDetector & ld, Mat& img, bool detectLanes)
 				}
 			}
 			else {
-				cv::line(img, a, b, Scalar(0, 0, 255), ld.houghVar.lineThickness, LINE_AA);
+				cv::line(img, a, b, Scalar(0, 0, 255), houghVar.lineThickness, LINE_AA);
 			}
 		}
 	}
@@ -168,8 +146,8 @@ void LineDetector::drawLines(LineDetector & ld, Mat& img, bool detectLanes)
 		roi_lane2_pt2.y = float(roi_lane2_pt2.y) / float(count_2);
 
 		Point dashboardLane1, dashboardLane2, line1End, line2End;
-		dashboardLane1.y = ld.getCurrImg().rows;
-		dashboardLane2.y = ld.getCurrImg().rows;
+		dashboardLane1.y = getCurrImg().rows;
+		dashboardLane2.y = getCurrImg().rows;
 
 		if (roi_lane1_pt1.y < roi_lane1_pt2.y) {
 			line1End = roi_lane1_pt1;
@@ -192,28 +170,33 @@ void LineDetector::drawLines(LineDetector & ld, Mat& img, bool detectLanes)
 		}
 
 		if (count_1 > 0) {
-			cv::arrowedLine(img, dashboardLane1, line1End, Scalar(0, 255, 0), ld.houghVar.lineThickness, LINE_AA);
-			ld.houghVar.line1_pt1 = line1End;
-			ld.houghVar.line1_pt2 = dashboardLane1;
+			cv::arrowedLine(img, dashboardLane1, line1End, Scalar(0, 255, 0), houghVar.lineThickness, LINE_AA);
+			houghVar.line1_pt1 = line1End;
+			houghVar.line1_pt2 = dashboardLane1;
 		}
 		else {
-			cv::arrowedLine(img, ld.houghVar.line1_pt1, ld.houghVar.line1_pt2, Scalar(0, 0, 255), ld.houghVar.lineThickness, LINE_AA);
+			cv::arrowedLine(img, houghVar.line1_pt1, houghVar.line1_pt2, Scalar(0, 0, 255), houghVar.lineThickness, LINE_AA);
 		}
 
 		if (count_2 > 0) {
-			cv::arrowedLine(img, dashboardLane2, line2End, Scalar(0, 255, 0), ld.houghVar.lineThickness, LINE_AA);
-			ld.houghVar.line2_pt1 = line2End;
-			ld.houghVar.line2_pt2 = dashboardLane2;
+			cv::arrowedLine(img, dashboardLane2, line2End, Scalar(0, 255, 0), houghVar.lineThickness, LINE_AA);
+			houghVar.line2_pt1 = line2End;
+			houghVar.line2_pt2 = dashboardLane2;
 		}
 		else {
-			cv::arrowedLine(img, ld.houghVar.line2_pt1, ld.houghVar.line2_pt2, Scalar(0, 0, 255), ld.houghVar.lineThickness, LINE_AA);
+			cv::arrowedLine(img, houghVar.line2_pt1, houghVar.line2_pt2, Scalar(0, 0, 255), houghVar.lineThickness, LINE_AA);
 		}
 	}
 
 }
 
 
-// Implementations Getters & Setters
+// Setters & Getters
+
+void LineDetector::setLines(std::vector<cv::Vec4i> lines_)
+{
+	houghVar.lines = lines_;
+}
 
 LineDetector::preprocessParams LineDetector::getPreprocessParams()
 {
@@ -224,10 +207,6 @@ LineDetector::houghParams LineDetector::getHoughParams()
 {
 	return houghVar;
 }
-
-
-
-
 
 
 // Parameter initialisation

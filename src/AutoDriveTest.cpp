@@ -10,7 +10,6 @@
 #include <stdlib.h>
 #include <direct.h>
 #include <chrono>
-//#include <thread>
 
 //#define _USE_MATH_DEFINES
 
@@ -70,20 +69,29 @@ void AutoDriveTest() {
 		vCap.read(frame);
 		CalibParams cb;
 		CalibParams::setup(cb, frame);
-		//AutoDrive ad = AutoDrive();
+	
+		// 6. Create temp variables:
+		vector<Rect2d> trackBoxVec_temp;
+		vector<int> trackingStatus_temp;
+		vector<vector<cv::Vec4i>> lines_temp;
+		vector<std::string> labels_temp;
+		labels_temp.resize(num_threads);
+		LineDetector ld_temp;
+		TrafficDetector td_temp;
 
-		// 6. Initialise threads
+
+		// 7. Initialise threads
 		for (int i = 0; i < num_threads; i++) {
 
-			// 6.1. Declare id for given objects
+			// 7.1. Declare id for given objects
 			int id = i;
 
-			// 6.2. Declare line-detector object
+			// 7.2. Declare line-detector object
 			LineDetector ld;
 			ld.setParams(cb.getPreprocessParams(), cb.getHoughParams(), cb.configParams.roi_Bbox);
 			cout << ld.getRoiBox() << "accessed private variable" << endl;
 
-			// 6.3. Declare traffic-detector object
+			// 7.3. Declare traffic-detector object
 			TrafficDetector td;
 			td.setRoiBox(cb.configParams.roi_Box_car);
 
@@ -97,21 +105,21 @@ void AutoDriveTest() {
 				return;
 			}
 
-			// 6.4. Declare traffic-tracker object
+			// 7.4. Declare traffic-tracker object
 			CarTracker ct;
 			ct.declareTracker(trackerType);
 
-			// 6.5. Declare autonomous driving object as sum of all above objects
+			// 7.5. Declare autonomous driving object as sum of all above objects
 			AutoDrives[i].setLd(ld);
 			AutoDrives[i].setCt(ct);
 			AutoDrives[i].setTd(td);
 			AutoDrives[i].setId(i);
-			//ad = AutoDrive(id, ld, td, ct);
-			//AutoDrives.push_back(ad);
 
-			// 6.6 Initialise threads: // Rewrite
+			// 7.6 Initialise threads: // Rewrite
 			frameThreads[i] = std::thread(AutoDrive::autoDriveThread, std::ref(AutoDrives[i]), std::ref(imgAvailable), std::ref(stop_threading), std::ref(trackBoxVec), std::ref(trackingStatus), std::ref(lines), std::ref(imgAvailGuard), std::ref(trackStatusGuard), std::ref(trackBoxGuard), std::ref(lanesGuard));
 		}
+
+		// 8. Start processing frames 
 		
 		int i = 0;
 		int threadNum = 0;
@@ -123,7 +131,6 @@ void AutoDriveTest() {
 					const std::lock_guard<mutex> lock(imgAvailGuard);
 					imgAvailable[threadNum] = true;
 					AutoDrives[threadNum].setCurrImg(frame);
-					AutoDrives[threadNum].setImgIDNum(int(i/3));
 				}
 				threadNum++;
 				frameCount++;
@@ -144,30 +151,22 @@ void AutoDriveTest() {
 						}
 						if (imgProcessed) {
 							wait = false;
-							vector<Rect2d> trackBoxVec_temp;
-							vector<int> trackingStatus_temp;
-							vector<vector<cv::Vec4i>> lines_temp;
-							
-							vector<std::string> labels_temp;
-							labels_temp.resize(num_threads);
-							LineDetector ld_;
-							TrafficDetector td_;
+
 							// Access all tracker/detection variables from each thread and display them on current frame:
 							{
 								const std::lock_guard<mutex> lock(trackBoxGuard);
-								ld_ = AutoDrives[j].getLd();
+								ld_temp = AutoDrives[j].getLd();
 								trackBoxVec_temp = trackBoxVec;
 								trackingStatus_temp = trackingStatus;
 								lines_temp = lines;
 								curr_img = AutoDrives[j].getCurrImg();
 								for (int k = 0; k < num_threads; ++k) {
 									if (trackBoxVec_temp[k].height != 0 & trackBoxVec_temp[k].width != 0) {
-										td_ = AutoDrives[k].getTd();
-										string trackLabel = td_.getTrackerLabel();
+										td_temp = AutoDrives[k].getTd();
+										string trackLabel = td_temp.getTrackerLabel();
 										labels_temp[k] = trackLabel;
 									}
 								}
-
 							}
 
 							for (int k = 0; k < num_threads; ++k) {
@@ -189,13 +188,10 @@ void AutoDriveTest() {
 								}
 								vector<cv::Vec4i> lines_k = lines_temp[k];
 								if (lines_k.size() > 0) {
-									ld_.setLines(lines_k);
-									LineDetector::drawLines(ld_, curr_img);
+									ld_temp.setLines(lines_k);
+									ld_temp.drawLines(curr_img);
 								}
 							}
-
-							// Draw all lines
-							// Display image
 						}
 						else {
 							this_thread::sleep_for(milliseconds(10));
@@ -226,9 +222,6 @@ void AutoDriveTest() {
 	}
 
 }
-
-
-
 
 
 int initialiseVideo(VideoCapture& vCap, string path, int startFrame) {

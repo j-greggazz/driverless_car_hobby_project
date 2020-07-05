@@ -27,14 +27,8 @@ public:
 
 	struct preprocessImgs {
 		cv::Mat roiImg;
-		cv::Mat blurImg;
-		cv::Mat grayImg;
-		cv::Mat cannyImg;
-		cv::Mat strElement;
-		cv::Mat morphImg;
 		cv::Mat houghImg;
 	};
-
 
 	// Hough Line Detection Parameters
 	struct houghParams {
@@ -46,36 +40,29 @@ public:
 		cv::Point line1_pt1, line1_pt2, line2_pt1, line2_pt2; // lane dimensions
 	};
 
-	LineDetector(int iD);
-	LineDetector();
-	~LineDetector();
-
-
-
 	preprocessParams getPreprocessParams();
 	houghParams getHoughParams();
 
-
-	//cv::Mat getCurrImg();
+	// Base class constructor-destructor used 
 
 	// Class Specific Methods
 	void preprocImg();
 	void detectLines();
+	void drawLines(cv::Mat& img, bool detectLanes = true);
+
+	// Getters - Setters
 	void setLines(std::vector<cv::Vec4i> lines_);
-	// Implement Base-Class Virtual Method(s)
-	void detectObject();
-
-	static void drawLines(LineDetector& ld, cv::Mat& img, bool detectLanes = true);
-
 	void setParams(preprocessParams pParams, houghParams hParams, cv::Rect roi_Bbox);
 
+	// Implement virtual function of base class
+	void detectObject();
 
+	
 private:
 
 	preprocessParams preprocessVar;
 	preprocessImgs preprocessImg;
 	houghParams houghVar;
-	//cv::Mat currImg;
 
 };
 #endif 

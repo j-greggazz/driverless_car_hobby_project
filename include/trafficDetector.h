@@ -8,9 +8,9 @@ class TrafficDetector : public ObjectDetector {
 
 public:
 
-	TrafficDetector(int iD);
-	TrafficDetector();
-	~TrafficDetector();
+    // Base class constructor-destructor used 
+
+	// Getters & setters:
 	void setDnnNet(cv::dnn::Net net);
 	cv::dnn::Net getDnnNet();
 	void detectObject();
@@ -18,14 +18,8 @@ public:
 	std::string getModelTxt();
 	std::string getModel();
 	std::string* getClasses();
-	int getFramesUntilDetection();
-	int getFailureCounter();
 	int getTrackStatus();
 	cv::Rect2d getTrackbox();
-	int getCountsSinceLastSearch();
-	void setFramesUntilDetection(int framesUntilDetec);
-	void setFailureCounter(int failCount);
-	void setCountsSinceLastSearch(int countsSince);
 	void setTrackerLabel(std::string trackerLabel);
 	std::string getTrackerLabel();
 
@@ -42,8 +36,6 @@ private:
 	std::string modelBin = "../models/MobileNetSSD_deploy.caffemodel";
 	cv::Rect2d td_trackbox;
 	std::string tracker_label;
-
-
 
 };
 #endif 

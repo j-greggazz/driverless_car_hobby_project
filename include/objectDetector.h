@@ -18,11 +18,9 @@
 
 class ObjectDetector {
 
-//private:
 
 public:
 	
-
 	// Constructor / Destructor
 	ObjectDetector();
 	ObjectDetector(int iD);
@@ -31,21 +29,12 @@ public:
 	// Setter Methods
 	void setId(int iD);
 	void setCurrImg(cv::Mat& curr_Img);
-	void set_x1_roi(int x1_Roi);
-	void set_y1_roi(int y1_Roi);
-	void setRecWidth(int rec_Width);
-	void setRecHeight(int rec_Height);
 	void setRoiBox(cv::Rect roi_Bbox_); // get methods to access all params and set RoiBox to these
 	void setImgProcessed(bool img_processed);
-
 
 	// Getter Methods
 	int getId();
 	cv::Mat getCurrImg();
-	int get_x1_roi();
-	int get_y1_roi();
-	int getRecWidth();
-	int getRecHeight();
 	bool getImgProcessed();
 	cv::Rect getRoiBox(); // get methods to access all params and set RoiBox to these
 
@@ -53,13 +42,9 @@ public:
 	virtual void detectObject() = 0;
 
 private:
-	// Member / Variables
+	// Member Variables
 	int id;
-	int x1_roi;
-	int y1_roi;
-	int recWidth;
-	int recHeight;
-	cv::Rect roi_Bbox = cv::Rect(x1_roi, y1_roi, recWidth, recHeight);
+	cv::Rect roi_Bbox;// = cv::Rect(x1_roi, y1_roi, recWidth, recHeight);
 	cv::Mat currImg;
 	bool imgProcessed;
 };

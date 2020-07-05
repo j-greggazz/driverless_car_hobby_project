@@ -3,29 +3,7 @@
 using namespace cv;
 using namespace std;
 
-TrafficDetector::TrafficDetector(int iD)
-{
-	setId(iD);
-}
-
-TrafficDetector::TrafficDetector()
-{
-}
-
-TrafficDetector::~TrafficDetector()
-{
-}
-
-void TrafficDetector::setDnnNet(cv::dnn::Net net)
-{
-	dnnNet = net;
-}
-
-cv::dnn::Net TrafficDetector::getDnnNet()
-{
-	return dnnNet;
-}
-
+// Implement virtual function (however not really implemented :/)
 void TrafficDetector::detectObject() {
 
 }
@@ -33,7 +11,6 @@ void TrafficDetector::detectObject() {
 void TrafficDetector::detectObject(std::vector<cv::Rect2d>& trackBoxVec, std::mutex& mt_trackbox)
 {
 
-	//if (detect) {
 	cv::Mat frame = getCurrImg()(getRoiBox()).clone();
 	Rect2d trackBox;
 	Mat resizedImg;
@@ -99,14 +76,13 @@ void TrafficDetector::detectObject(std::vector<cv::Rect2d>& trackBoxVec, std::mu
 						setTrackerLabel(label);
 					}
 					trackingStatus = 1;
-					framesUntilDetection = 100;
-					failCounter = 0;
 				}
 			}
 		}
 	}
-	//	}
 }
+
+// Getters & Setters:
 
 string TrafficDetector::getModelTxt()
 {
@@ -117,42 +93,22 @@ string TrafficDetector::getModel()
 {
 	return modelBin;
 }
-int TrafficDetector::getFramesUntilDetection()
-{
-	return framesUntilDetection;
-}
-int TrafficDetector::getFailureCounter()
-{
-	return failCounter;
-}
+
 int TrafficDetector::getTrackStatus()
 {
 	return trackingStatus;
 }
+
 cv::Rect2d TrafficDetector::getTrackbox()
 {
 	return td_trackbox;
 }
-int TrafficDetector::getCountsSinceLastSearch()
-{
-	return countsSinceLastSearch;
-}
-void TrafficDetector::setFramesUntilDetection(int framesUntilDetec)
-{
-	framesUntilDetection = framesUntilDetec;
-}
-void TrafficDetector::setFailureCounter(int failCount)
-{
-	failCounter = failCount;
-}
-void TrafficDetector::setCountsSinceLastSearch(int countsSince)
-{
-	countsSinceLastSearch = countsSince;
-}
+
 void TrafficDetector::setTrackerLabel(std::string trackerLabel)
 {
 	tracker_label = trackerLabel;
 }
+
 std::string TrafficDetector::getTrackerLabel()
 {
 	return tracker_label;
@@ -161,6 +117,16 @@ std::string TrafficDetector::getTrackerLabel()
 std::string* TrafficDetector::getClasses()
 {
 	return CLASSES;
+}
+
+void TrafficDetector::setDnnNet(cv::dnn::Net net)
+{
+	dnnNet = net;
+}
+
+cv::dnn::Net TrafficDetector::getDnnNet()
+{
+	return dnnNet;
 }
 
 

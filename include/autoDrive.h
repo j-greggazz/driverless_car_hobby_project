@@ -24,27 +24,22 @@ public:
 	AutoDrive(int iD, LineDetector& lD, TrafficDetector& tD, CarTracker& cT);
 	AutoDrive();
 	~AutoDrive();
-	//void updateParams();
-	void updateImg(cv::Mat& img);
-	static void autoDriveThread(AutoDrive& aD, std::vector<bool>& imgAvailable, std::atomic<bool>& stopThreads, std::vector<cv::Rect2d>& trackBoxVec, std::vector<int> &trackingStatus, std::vector<std::vector<cv::Vec4i>>& lines, std::mutex& imgAvailableGuard, std::mutex& trackingStatusGuard, std::mutex& mt_trackbox, std::mutex& lines_reserve);
+
 	void setId(int iD);
-	int getId();
 	void setLd(LineDetector lD);
 	void setCt(CarTracker cT);
 	void setTd(TrafficDetector tD);
 	void setCurrImg(cv::Mat curr_Img);
-	void setImgIDNum(int id_img_num);
-	int getImgIDNum();
-	void setSecondImg(cv::Mat sec_img);
-	cv::Mat getSecondImg();
+	void setImgProcessed(bool status);
 
-
+	int getId();
 	cv::Mat getCurrImg();
 	LineDetector getLd();
 	TrafficDetector getTd();
 	CarTracker getCt();
-	void setImgProcessed(bool status);
 	bool getImgProcessed();
+
+	static void autoDriveThread(AutoDrive& aD, std::vector<bool>& imgAvailable, std::atomic<bool>& stopThreads, std::vector<cv::Rect2d>& trackBoxVec, std::vector<int> &trackingStatus, std::vector<std::vector<cv::Vec4i>>& lines, std::mutex& imgAvailableGuard, std::mutex& trackingStatusGuard, std::mutex& mt_trackbox, std::mutex& lines_reserve);
 
 private:
 
@@ -52,10 +47,9 @@ private:
 	TrafficDetector td;
 	CarTracker ct;
 	cv::Mat currImg;
-	cv::Mat secondaryImg;
 	int id;
 	bool imgProcessed = false; 
-	int imgID_number;
+
 
 
 

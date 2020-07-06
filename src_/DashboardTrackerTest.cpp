@@ -27,7 +27,7 @@ void AutoDriveTest() {
 	// 1. Setup video-capture
 	VideoCapture vCap;
 	string path_ = "../data/dashboardVid.mp4";
-	int startFrame = 10500;
+	int startFrame = 10600;
 	bool success = initialiseVideo(vCap, path_, startFrame);
 
 
@@ -72,8 +72,11 @@ void AutoDriveTest() {
 	
 		// 6. Create temp variables:
 		vector<Rect2d> trackBoxVec_temp;
+		trackBoxVec_temp.resize(num_threads);
 		vector<int> trackingStatus_temp;
+		trackingStatus_temp.resize(num_threads);
 		vector<vector<cv::Vec4i>> lines_temp;
+		lines_temp.resize(num_threads);
 		vector<std::string> labels_temp;
 		labels_temp.resize(num_threads);
 		LineDetector ld_temp;
@@ -121,13 +124,13 @@ void AutoDriveTest() {
 		dashboardTracker_ptr1->setLd(ld);
 		dashboardTracker_ptr1->setCt(ct);
 		dashboardTracker_ptr1->setTd(td);
-		dashboardTracker_ptr1->setId(0);
+		dashboardTracker_ptr1->setId(1);
 
 		DashboardTracker *dashboardTracker_ptr2 = new DashboardTracker();
 		dashboardTracker_ptr2->setLd(ld);
 		dashboardTracker_ptr2->setCt(ct);
 		dashboardTracker_ptr2->setTd(td);
-		dashboardTracker_ptr2->setId(0);
+		dashboardTracker_ptr2->setId(2);
 
 		DashboardTrackers[0] = dashboardTracker_ptr0;
 		DashboardTrackers[1] = dashboardTracker_ptr1;
@@ -219,8 +222,10 @@ void AutoDriveTest() {
 					}
 				}
 			}
-			
-			imshow("Frame_i", curr_img);
+			Mat temp;
+			cv::resize(curr_img, temp, cv::Size(), 0.75, 0.75);
+			imshow("Frame_i", temp);
+			//resizeWindow("Frame_i", 1250, int(768*1250/1366));
 			{
 				const std::lock_guard<mutex> lock(imgAvailGuard);
 				cout << "frame " << i << endl;
@@ -240,13 +245,15 @@ void AutoDriveTest() {
 			}
 
 		}
-
-		for (int m = 0; m < 3; m++) {
-			frameThreads[m].join();
+		if (quit != 'q') {
+			for (int m = 0; m < 3; m++) {
+				frameThreads[m].join();
+			}
+			delete dashboardTracker_ptr0;
+			delete dashboardTracker_ptr1;
+			delete dashboardTracker_ptr2;
 		}
-		delete dashboardTracker_ptr0;
-		delete dashboardTracker_ptr1;
-		delete dashboardTracker_ptr2;
+
 		return;
 	}
 

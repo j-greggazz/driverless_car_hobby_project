@@ -14,7 +14,7 @@ public:
 	void setDnnNet(cv::dnn::Net net);
 	cv::dnn::Net getDnnNet();
 	void detectObject();
-	void detectObject(std::vector<cv::Rect2d>& trackBoxVec, std::mutex& mt_trackbox);
+	void detectObject(std::vector<cv::Rect2d>& trackBoxVec);
 	std::string getModelTxt();
 	std::string getModel();
 	std::string* getClasses();
@@ -36,6 +36,7 @@ private:
 	std::string modelBin = "../models/MobileNetSSD_deploy.caffemodel";
 	cv::Rect2d td_trackbox;
 	std::string tracker_label;
+	int id;
 
 };
 #endif 

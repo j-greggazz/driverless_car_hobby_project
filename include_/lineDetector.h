@@ -63,6 +63,7 @@ private:
 	preprocessParams preprocessVar;
 	preprocessImgs preprocessImg;
 	houghParams houghVar;
+	int id;
 
 };
 #endif 

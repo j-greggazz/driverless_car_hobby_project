@@ -175,7 +175,7 @@ void LineDetector::drawLines(Mat& img, bool detectLanes)
 			houghVar.line1_pt2 = dashboardLane1;
 		}
 		else {
-			cv::arrowedLine(img, houghVar.line1_pt1, houghVar.line1_pt2, Scalar(0, 0, 255), houghVar.lineThickness, LINE_AA);
+			cv::arrowedLine(img, houghVar.line1_pt2, houghVar.line1_pt1, Scalar(0, 0, 255), houghVar.lineThickness, LINE_AA);
 		}
 
 		if (count_2 > 0) {
@@ -184,7 +184,7 @@ void LineDetector::drawLines(Mat& img, bool detectLanes)
 			houghVar.line2_pt2 = dashboardLane2;
 		}
 		else {
-			cv::arrowedLine(img, houghVar.line2_pt1, houghVar.line2_pt2, Scalar(0, 0, 255), houghVar.lineThickness, LINE_AA);
+			cv::arrowedLine(img, houghVar.line2_pt2, houghVar.line2_pt1, Scalar(0, 0, 255), houghVar.lineThickness, LINE_AA);
 		}
 	}
 

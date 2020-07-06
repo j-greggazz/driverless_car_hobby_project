@@ -96,7 +96,9 @@ void DashboardTracker::runThread(std::vector<bool>& imgAvail, std::atomic<bool>&
 	Rect2d roi_tracker_box = td.getRoiBox();
 	bool updateSuccess;
 	bool imgAvailable;
-
+	td.setId(this->id);
+	ld.setId(this->id);
+	ct.setId(this->id);
 	std::string CLASSES[21] = { "background", "aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable",
 									"dog", "horse", "motorbike", "person", "pottedplant", "sheep","sofa", "train", "tvmonitor" };
 	int countsSinceLastSearch = 20;
@@ -137,7 +139,10 @@ void DashboardTracker::runThread(std::vector<bool>& imgAvail, std::atomic<bool>&
 			if (trackStatus == 0 & countsSinceLastSearch >= 20)
 			{
 				countsSinceLastSearch = 0;
-				td.detectObject(trackBoxVec, mt_trackbox);
+				{
+					const std::lock_guard<mutex> lock(mt_trackbox);
+					td.detectObject(trackBoxVec);
+				}
 				trackStatus = td.getTrackStatus();
 				if (trackStatus == 1) {
 					trackBox = td.getTrackbox();
@@ -151,12 +156,37 @@ void DashboardTracker::runThread(std::vector<bool>& imgAvail, std::atomic<bool>&
 			}
 
 			else if ((trackStatus == 1) | (trackStatus == 2)) { // DO NOT LET IT SET A NEW TRACKER!! IT UPDATES ON A DIFFERENT AREA AFTER TRACKER LOST??
-			
 
 				{
 					const std::lock_guard<mutex> lock(mt_trackbox);
 					updateSuccess = ct.updateTracker(img(roi_tracker_box), trackBoxVec[id]);
+					bool trackBoxOk = true;
+					for (int m = 0; m < trackBoxVec.size(); m++) {
+						Rect2d trackBox_m = trackBoxVec[m];
+						Point center_of_rect_m = (trackBox_m.br() + trackBox_m.tl())*0.5;
+						if (center_of_rect_m.x != 0 & center_of_rect_m.y != 0) {
+							for (int n = 0; n < trackBoxVec.size(); n++) {
+								if (m != n) {
+									Rect2d trackBox_n = trackBoxVec[n];
+									Point center_of_rect_n = (trackBox_n.br() + trackBox_n.tl())*0.5;
+									if (center_of_rect_n.x != 0 & center_of_rect_n.y != 0) {
+										Point diff = center_of_rect_m - center_of_rect_n;
+										float dist_Bboxes = cv::sqrt(diff.x*diff.x + diff.y*diff.y);
+
+										// Threshold for another tracked object should be the distance between current bounding box centers
+										if (dist_Bboxes < 100) {
+											updateSuccess = false;
+											trackBoxVec[id] = trackBox_empty;
+											break;
+
+										}
+									}
+								}
+							}
+						}
+					}
 				}
+
 
 				if (updateSuccess)
 				{
@@ -189,16 +219,17 @@ void DashboardTracker::runThread(std::vector<bool>& imgAvail, std::atomic<bool>&
 					}
 				}
 			}
-
-			else {
-				countsSinceLastSearch++;
-			}
-			imgProcessed = true;
 		}
-		this_thread::sleep_for(chrono::milliseconds(10));
-	}
 
+		else {
+			countsSinceLastSearch++;
+		}
+		imgProcessed = true;
+	}
+	this_thread::sleep_for(chrono::milliseconds(10));
 }
+
+
 
 
 
@@ -257,7 +288,7 @@ void DashboardTracker::dashboardTrackersThread(DashboardTracker& aD, vector<bool
 			}
 
 			// Optional Step 2: If no tracker instantiated, keep detecting
-		
+
 			if (trackStatus == 0 & countsSinceLastSearch >= 20)
 			{
 				countsSinceLastSearch = 0;
@@ -316,7 +347,7 @@ void DashboardTracker::dashboardTrackersThread(DashboardTracker& aD, vector<bool
 					}
 				}
 			}
-		
+
 			else {
 				countsSinceLastSearch++;
 			}

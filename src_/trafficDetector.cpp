@@ -8,7 +8,7 @@ void TrafficDetector::detectObject() {
 
 }
 
-void TrafficDetector::detectObject(std::vector<cv::Rect2d>& trackBoxVec)
+void TrafficDetector::detectObject(std::vector<cv::Rect2d>& trackBoxVec, std::mutex& mt_trackbox)
 {
 
 	cv::Mat frame = getCurrImg()(getRoiBox()).clone();
@@ -39,24 +39,26 @@ void TrafficDetector::detectObject(std::vector<cv::Rect2d>& trackBoxVec)
 					(int)(xRightTop - xLeftBottom),
 					(int)(yRightTop - yLeftBottom));
 				bool trackBoxOk = true;
+				{
+					const std::lock_guard<mutex> lock(mt_trackbox);
+					for (int k = 0; k < trackBoxVec.size(); k++) {
 
-				for (int k = 0; k < trackBoxVec.size(); k++) {
+						if (k != id) {
 
-					if (k != id) {
+							Rect2d trackBox_k = trackBoxVec[k];
+							Point center_of_rect_k = (trackBox_k.br() + trackBox_k.tl())*0.5;
+							if (center_of_rect_k.x != 0 & center_of_rect_k.y != 0) {
 
-						Rect2d trackBox_k = trackBoxVec[k];
-						Point center_of_rect_k = (trackBox_k.br() + trackBox_k.tl())*0.5;
-						if (center_of_rect_k.x != 0 & center_of_rect_k.y != 0) {
+								Point center_of_rect_j = (trackBox.br() + trackBox.tl())*0.5;
 
-							Point center_of_rect_j = (trackBox.br() + trackBox.tl())*0.5;
-							Point diff = center_of_rect_j - center_of_rect_k;
-							float dist_Bboxes = cv::sqrt(diff.x*diff.x + diff.y*diff.y);
+								Point diff = center_of_rect_j - center_of_rect_k;
+								float dist_Bboxes = cv::sqrt(diff.x*diff.x + diff.y*diff.y);
 
-							// Threshold for another tracked object should be the distance between current bounding box centers
-							if (dist_Bboxes < 100 | (center_of_rect_k.x == 0 & center_of_rect_k.y == 0)) {
-								trackBoxOk = false;
+								// Threshold for another tracked object should be the distance between current bounding box centers
+								if (dist_Bboxes < 100 | (center_of_rect_k.x == 0 & center_of_rect_k.y == 0)) {
+									trackBoxOk = false;
+								}
 							}
-
 						}
 					}
 				}

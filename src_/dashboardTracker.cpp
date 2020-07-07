@@ -127,22 +127,29 @@ void DashboardTracker::runThread(std::vector<bool>& imgAvail, std::atomic<bool>&
 			}
 
 			// Step 1: Lane Detection
+			auto start = std::chrono::high_resolution_clock::now();
 			ld.detectObject();
 
 			{
 				const std::lock_guard<mutex> lock(lines_reserve);
+
 				lines[id] = ld.getHoughParams().lines;
 				trackStatus = trackingStatus[id];
+				auto finish = std::chrono::high_resolution_clock::now();
+				std::chrono::duration<double> elapsed = finish - start;
+				std::cout << "Line detection took : " << elapsed.count() << " s\n";
 			}
 
 			// Optional Step 2: If no tracker instantiated, keep detecting
 			if (trackStatus == 0 & countsSinceLastSearch >= 20)
 			{
 				countsSinceLastSearch = 0;
-				{
-					const std::lock_guard<mutex> lock(mt_trackbox);
-					td.detectObject(trackBoxVec);
-				}
+				auto start = std::chrono::high_resolution_clock::now();
+				td.detectObject(trackBoxVec, mt_trackbox);
+				auto finish = std::chrono::high_resolution_clock::now();
+				std::chrono::duration<double> elapsed = finish - start;
+				std::cout << "Traffic detection took : " << elapsed.count() << " s\n";
+
 				trackStatus = td.getTrackStatus();
 				if (trackStatus == 1) {
 					trackBox = td.getTrackbox();
@@ -156,10 +163,15 @@ void DashboardTracker::runThread(std::vector<bool>& imgAvail, std::atomic<bool>&
 			}
 
 			else if ((trackStatus == 1) | (trackStatus == 2)) { // DO NOT LET IT SET A NEW TRACKER!! IT UPDATES ON A DIFFERENT AREA AFTER TRACKER LOST??
-
 				{
-					const std::lock_guard<mutex> lock(mt_trackbox);
-					updateSuccess = ct.updateTracker(img(roi_tracker_box), trackBoxVec[id]);
+					const std::lock_guard<mutex> lock(trackingStatusGuard);
+					auto start = std::chrono::high_resolution_clock::now();
+					updateSuccess = ct.updateTracker(img(roi_tracker_box), trackBox);
+					trackBoxVec[id] = trackBox;
+					auto finish = std::chrono::high_resolution_clock::now();
+					std::chrono::duration<double> elapsed = finish - start;
+					std::cout << "Update took : " << elapsed.count() << " s\n";
+					/*
 					bool trackBoxOk = true;
 					for (int m = 0; m < trackBoxVec.size(); m++) {
 						Rect2d trackBox_m = trackBoxVec[m];
@@ -185,6 +197,7 @@ void DashboardTracker::runThread(std::vector<bool>& imgAvail, std::atomic<bool>&
 							}
 						}
 					}
+					*/
 				}
 
 

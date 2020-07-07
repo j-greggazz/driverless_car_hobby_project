@@ -61,7 +61,7 @@ void AutoDriveTest() {
 		vector<vector<cv::Vec4i>> lines;
 		lines.resize(num_threads);
 		//DashboardTracker ad = DashboardTracker();
-		vector<DashboardTracker*> DashboardTrackers; 
+		vector<DashboardTracker*> DashboardTrackers;
 		DashboardTrackers.resize(num_threads);
 
 		// 5. Start Setup of program
@@ -69,7 +69,7 @@ void AutoDriveTest() {
 		vCap.read(frame);
 		CalibParams cb;
 		CalibParams::setup(cb, frame);
-	
+
 		// 6. Create temp variables:
 		vector<Rect2d> trackBoxVec_temp;
 		trackBoxVec_temp.resize(num_threads);
@@ -81,32 +81,39 @@ void AutoDriveTest() {
 		labels_temp.resize(num_threads);
 		LineDetector ld_temp;
 		TrafficDetector td_temp;
-
+		vector<TrafficDetector> trafficDetectors;
+		vector<LineDetector> lineDetectors;
+		vector<CarTracker> carTrackers;
 		// 7. Create member variables:
 
-		// 7.2. Declare line-detector object
-		LineDetector ld;
-		ld.setParams(cb.getPreprocessParams(), cb.getHoughParams(), cb.configParams.roi_Bbox);
-		cout << ld.getRoiBox() << "accessed private variable" << endl;
+		for (int k = 0; k < num_threads; k++) {
+			// 7.2. Declare line-detector object
+			LineDetector ld;
+			ld.setParams(cb.getPreprocessParams(), cb.getHoughParams(), cb.configParams.roi_Bbox);
+			cout << ld.getRoiBox() << "accessed private variable" << endl;
 
-		// 7.3. Declare traffic-detector object
-		TrafficDetector td;
-		td.setRoiBox(cb.configParams.roi_Box_car);
+			// 7.3. Declare traffic-detector object
+			TrafficDetector td;
+			td.setRoiBox(cb.configParams.roi_Box_car);
 
-		try {
-			td.setDnnNet(dnn::readNetFromCaffe(td.getModelTxt(), td.getModel()));
-			cerr << "loaded successfully" << endl;
+			try {
+				td.setDnnNet(dnn::readNetFromCaffe(td.getModelTxt(), td.getModel()));
+				cerr << "loaded successfully" << endl;
+			}
+			catch (cv::Exception& e)
+			{
+				std::cerr << "loading failed: " << e.what() << std::endl;
+				return;
+			}
+
+			// 7.4. Declare traffic-tracker object
+			CarTracker ct;
+			ct.declareTracker(trackerType);
+
+			lineDetectors.push_back(ld);
+			trafficDetectors.push_back(td);
+			carTrackers.push_back(ct);
 		}
-		catch (cv::Exception& e)
-		{
-			std::cerr << "loading failed: " << e.what() << std::endl;
-			return;
-		}
-
-		// 7.4. Declare traffic-tracker object
-		CarTracker ct;
-		ct.declareTracker(trackerType);
-
 		//vector<LineDetector> LineDetectors = { ld, ld, ld };
 		//vector<TrafficDetector> TrafficDetectors = { td, td, td };
 		//vector<CarTracker> CarTrackers = { ct, ct, ct };
@@ -115,21 +122,21 @@ void AutoDriveTest() {
 		// 7.5. Declare autonomous driving objects as sum of all above objects
 		// Thread_1:
 		DashboardTracker *dashboardTracker_ptr0 = new DashboardTracker();
-		dashboardTracker_ptr0->setLd(ld);
-		dashboardTracker_ptr0->setCt(ct);
-		dashboardTracker_ptr0->setTd(td);
+		dashboardTracker_ptr0->setLd(lineDetectors[0]);
+		dashboardTracker_ptr0->setCt(carTrackers[0]);
+		dashboardTracker_ptr0->setTd(trafficDetectors[0]);
 		dashboardTracker_ptr0->setId(0);
 
 		DashboardTracker *dashboardTracker_ptr1 = new DashboardTracker();
-		dashboardTracker_ptr1->setLd(ld);
-		dashboardTracker_ptr1->setCt(ct);
-		dashboardTracker_ptr1->setTd(td);
+		dashboardTracker_ptr1->setLd(lineDetectors[1]);
+		dashboardTracker_ptr1->setCt(carTrackers[1]);
+		dashboardTracker_ptr1->setTd(trafficDetectors[1]);
 		dashboardTracker_ptr1->setId(1);
 
 		DashboardTracker *dashboardTracker_ptr2 = new DashboardTracker();
-		dashboardTracker_ptr2->setLd(ld);
-		dashboardTracker_ptr2->setCt(ct);
-		dashboardTracker_ptr2->setTd(td);
+		dashboardTracker_ptr2->setLd(lineDetectors[2]);
+		dashboardTracker_ptr2->setCt(carTrackers[2]);
+		dashboardTracker_ptr2->setTd(trafficDetectors[2]);
 		dashboardTracker_ptr2->setId(2);
 
 		DashboardTrackers[0] = dashboardTracker_ptr0;
@@ -143,7 +150,7 @@ void AutoDriveTest() {
 		frameThreads[2] = dashboardTracker_ptr2->dashboardThread(std::ref(imgAvailable), std::ref(stop_threading), std::ref(trackBoxVec), std::ref(trackingStatus), std::ref(lines), std::ref(imgAvailGuard), std::ref(trackStatusGuard), std::ref(trackBoxGuard), std::ref(lanesGuard));
 
 		// 8. Start processing frames 
-		
+		auto start = std::chrono::high_resolution_clock::now();
 		int i = 0;
 		int threadNum = 0;
 		while (vCap.isOpened() && quit != 113) {
@@ -174,7 +181,7 @@ void AutoDriveTest() {
 						}
 						if (imgProcessed) {
 							wait = false;
-
+							start = std::chrono::high_resolution_clock::now();
 							// Access all tracker/detection variables from each thread and display them on current frame:
 							{
 								const std::lock_guard<mutex> lock(trackBoxGuard);
@@ -183,13 +190,19 @@ void AutoDriveTest() {
 								trackingStatus_temp = trackingStatus;
 								lines_temp = lines;
 								curr_img = DashboardTrackers[j]->getCurrImg();
-								for (int k = 0; k < num_threads; ++k) {
-									if (trackBoxVec_temp[k].height != 0 & trackBoxVec_temp[k].width != 0) {
+							}
+
+							for (int k = 0; k < num_threads; ++k) {
+								if (trackBoxVec_temp[k].height != 0 & trackBoxVec_temp[k].width != 0) {
+									{
+										const std::lock_guard<mutex> lock(imgProcessedGuard);
 										td_temp = DashboardTrackers[k]->getTd();
-										string trackLabel = td_temp.getTrackerLabel();
-										labels_temp[k] = trackLabel;
 									}
+
+									string trackLabel = td_temp.getTrackerLabel();
+									labels_temp[k] = trackLabel;
 								}
+
 							}
 
 							for (int k = 0; k < num_threads; ++k) {
@@ -225,10 +238,13 @@ void AutoDriveTest() {
 			Mat temp;
 			cv::resize(curr_img, temp, cv::Size(), 0.75, 0.75);
 			imshow("Frame_i", temp);
+			auto finish = std::chrono::high_resolution_clock::now();
+			std::chrono::duration<double> elapsed = finish - start;
 			//resizeWindow("Frame_i", 1250, int(768*1250/1366));
 			{
 				const std::lock_guard<mutex> lock(imgAvailGuard);
 				cout << "frame " << i << endl;
+				std::cout << "Displaying latest status took : " << elapsed.count() << " s\n";
 			}
 			processedFrames++;
 			i++;

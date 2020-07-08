@@ -3,23 +3,20 @@
 #include <conio.h>
 #include <stdlib.h>
 #include <direct.h>
-#include <autoDrive.h>
+#include <dashboardTracker.h>
 using namespace cv;
 using namespace std;
 
 // Ctrl+k Ctrl+D align code
-void AutoDriveTest();
+void runThreadsOnHeap();
+void runThreadsOnStack();
+void runStaticMethodThreads();
 
 int main()
 {
-	
-
-
-
-	AutoDriveTest();
-
-
-
+	runStaticMethodThreads();
+	runThreadsOnStack();
+    runThreadsOnHeap();
 
 	return 1;
 }

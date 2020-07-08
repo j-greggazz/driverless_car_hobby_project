@@ -36,6 +36,7 @@ private:
 	std::string modelBin = "../models/MobileNetSSD_deploy.caffemodel";
 	cv::Rect2d td_trackbox;
 	std::string tracker_label;
+	int id;
 
 };
 #endif 

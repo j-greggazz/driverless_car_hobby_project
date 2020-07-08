@@ -22,7 +22,7 @@ void TrafficDetector::detectObject(std::vector<cv::Rect2d>& trackBoxVec, std::mu
 	Mat detection = dnnNet.forward("detection_out");
 	Mat detectionMat(detection.size[2], detection.size[3], CV_32F, detection.ptr<float>());
 	ostringstream ss;
-	float confidenceThreshold = 0.1;
+	float confidenceThreshold = .20;
 	for (int i = 0; i < detectionMat.rows; i++) {
 		float confidence = detectionMat.at<float>(i, 2);
 
@@ -39,36 +39,38 @@ void TrafficDetector::detectObject(std::vector<cv::Rect2d>& trackBoxVec, std::mu
 					(int)(xRightTop - xLeftBottom),
 					(int)(yRightTop - yLeftBottom));
 				bool trackBoxOk = true;
-				{
-					const std::lock_guard<mutex> lock(mt_trackbox);
-					for (int k = 0; k < trackBoxVec.size(); k++) {
 
-						if (k != id) {
+				// Reading (Thread safe)
+				for (int k = 0; k < trackBoxVec.size(); k++) {
 
-							Rect2d trackBox_k = trackBoxVec[k];
-							Point center_of_rect_k = (trackBox_k.br() + trackBox_k.tl())*0.5;
-							if (center_of_rect_k.x != 0 & center_of_rect_k.y != 0) {
+					if (k != id) {
 
-								Point center_of_rect_j = (trackBox.br() + trackBox.tl())*0.5;
+						Rect2d trackBox_k = trackBoxVec[k];
+						Point center_of_rect_k = (trackBox_k.br() + trackBox_k.tl())*0.5;
+						if (center_of_rect_k.x != 0 & center_of_rect_k.y != 0) {
 
-								Point diff = center_of_rect_j - center_of_rect_k;
-								float dist_Bboxes = cv::sqrt(diff.x*diff.x + diff.y*diff.y);
+							Point center_of_rect_j = (trackBox.br() + trackBox.tl())*0.5;
 
-								// Threshold for another tracked object should be the distance between current bounding box centers
-								if (dist_Bboxes < 100 | (center_of_rect_k.x == 0 & center_of_rect_k.y == 0)) {
-									trackBoxOk = false;
-								}
+							Point diff = center_of_rect_j - center_of_rect_k;
+							float dist_Bboxes = cv::sqrt(diff.x*diff.x + diff.y*diff.y);
+
+							// Threshold for another tracked object should be the distance between current bounding box centers
+							if (dist_Bboxes < 100 | (center_of_rect_k.x == 0 & center_of_rect_k.y == 0)) {
+								trackBoxOk = false;
 							}
 						}
 					}
 				}
+
 				if (trackBoxOk) {
+
 					{
+						// Writing
 						const std::lock_guard<mutex> lock(mt_trackbox);
 						trackBoxVec[id] = trackBox;
 						td_trackbox = trackBox;
 						cout << "Tracker instantiated!!: " << confidence << endl;
-						
+
 						ss.str("");
 						ss << confidence;
 						String conf(ss.str());
@@ -76,6 +78,7 @@ void TrafficDetector::detectObject(std::vector<cv::Rect2d>& trackBoxVec, std::mu
 						setTrackerLabel(label);
 					}
 					trackingStatus = 1;
+					return;
 				}
 			}
 		}

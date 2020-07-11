@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <direct.h>
 #include <chrono>
+#include <QMessageBox>
 
 //#define _USE_MATH_DEFINES
 
@@ -22,12 +23,12 @@ using namespace std::chrono;
 
 int initialiseVideo(VideoCapture& vCap, string path, int startFrame);
 
-void runThreadsOnHeap() {
+void runThreadsOnHeap(string video_path) {
 	// 1. Setup video-capture
 	VideoCapture vCap;
-	string path_ = "../data/dashboardVid.mp4";
+	//string path_ = "../data/dashboardVid.mp4";
 	int startFrame = 10600;
-	bool success = initialiseVideo(vCap, path_, startFrame);
+	bool success = initialiseVideo(vCap, video_path, startFrame);
 	bool createOnStack = true;
 
 	if (success) {
@@ -272,9 +273,13 @@ void runThreadsOnHeap() {
 		return;
 	}
 
+	else {
+	cout << "invalid file provided. " << endl;
+	}
+	return;
 }
 
-void runThreadsOnStack() {
+void runThreadsOnStack(string video_path) {
 
 
 	// 1. Setup video-capture
@@ -524,7 +529,7 @@ void runThreadsOnStack() {
 
 }
 
-void runStaticMethodThreads() {
+void runStaticMethodThreads(string video_path) {
 	//AutoDrive ad(LineDetector ld, TrafficDetector td, CarTracker ct);
 
 	// 1. Setup video-capture

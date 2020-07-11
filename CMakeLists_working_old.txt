@@ -14,9 +14,19 @@ set(CMAKE_AUTORCC ON)
 find_package(OpenCV 4.0 REQUIRED)
 find_package(Qt5 COMPONENTS Core Gui Widgets REQUIRED)
 
-include_directories(include/ ${OpenCV_INCLUDE_DIR})
-
 SET(CMAKE_INCLUDE_CURRENT_DIR ON)
+
+FILE(GLOB UIs *.ui)
+# to generate header files for .ui files
+qt5_wrap_ui(UI_HEADERS  ${UIs})
+
+set(project_ui include/mainwindow.ui)
+qt5_wrap_ui(project_headers_wrapped ${project_ui})
+
+set(project_headers include/mainwindow.h)
+qt5_wrap_cpp(project_sources_moc ${project_headers})
+
+include_directories(include/ ${OpenCV_INCLUDE_DIR})
 
 add_library(CalibrationParameters STATIC src/calibParams.cpp include/calibParams.h)
 target_link_libraries(CalibrationParameters ${OpenCV_LIBS})
@@ -36,17 +46,23 @@ target_link_libraries(ContourDetection ${OpenCV_LIBS})
 add_library(CarTracker STATIC src/carTracker.cpp include/carTracker.h)
 target_link_libraries(CarTracker ${OpenCV_LIBS})
 
+#add_library(MainWindow STATIC src/mainwindow.cpp include/mainwindow.h include/ui_mainwindow.h)
+#target_link_libraries(MainWindow Qt5::Core Qt5::Widgets)
+
 add_library(DashboardTracker STATIC src/dashboardTracker.cpp include/dashboardTracker.h)
-target_link_libraries(DashboardTracker ${OpenCV_LIBS} CalibrationParameters ObjectDetection LineDetection TrafficDetection ContourDetection CarTracker)
+target_link_libraries(DashboardTracker ${OpenCV_LIBS} CalibrationParameters ObjectDetection LineDetection TrafficDetection ContourDetection CarTracker)# MainWindow)
 
+#add_executable(${PROJECT_NAME} ${project_headers} ${project_sources} 
+#    ${project_sources_moc} ${project_headers_wrapped})
 
-set(project_ui include/mainwindow.ui)
-qt5_wrap_ui(project_headers_wrapped ${project_ui})
-set(project_headers include/mainwindow.h)
-qt5_wrap_cpp(project_sources_moc ${project_headers})
-set(project_sources src/mainwindow.cpp src/main.cpp src/DashboardTrackerTest.cpp) 
-add_executable(DashboardTrackerTest ${project_headers} ${project_sources} ${project_sources_moc} ${project_headers_wrapped})
+add_executable(DashboardTrackerTest src/main.cpp src/DashboardTrackerTest.cpp ${project_headers} src/mainwindow.cpp  ${project_sources_moc} ${project_headers_wrapped})
 target_link_libraries(DashboardTrackerTest DashboardTracker Qt5::Core Qt5::Gui Qt5::Widgets)
+
+
+#src/mainwindow.ui src/mainwindow.cpp src/resources.qrc
+#get_target_property(QtCore Qt5::Core LOCATION)
+#get_target_property(QtWidgets Qt5::Widgets LOCATION)
+
 
  
     

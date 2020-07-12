@@ -27,7 +27,10 @@ int main(int argc, char *argv[])
 	if (!a.exec()) {
 		path = w.getVidPath();
 		cout << path << endl;
-		runStaticMethodThreads(path);
+
+		if (!w.getAbort()) {
+			runStaticMethodThreads(path);
+		}
 	};
 
 	return 1;

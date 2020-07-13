@@ -19,20 +19,28 @@ void runStaticMethodThreads(string video_path);
 
 int main(int argc, char *argv[])
 {
+
+	bool testContours = true;
+
+	if (testContours) {
+
+
+	}
 	
-	QApplication a(argc, argv);
-	MainWindow w;
-	w.show();
-	string path;
-	if (!a.exec()) {
-		path = w.getVidPath();
-		cout << path << endl;
+	else {
+		QApplication a(argc, argv);
+		MainWindow w;
+		w.show();
+		string path;
+		if (!a.exec()) {
+			path = w.getVidPath();
+			cout << path << endl;
 
-		if (!w.getAbort()) {
-			runStaticMethodThreads(path);
-		}
-	};
-
+			if (!w.getAbort()) {
+				runStaticMethodThreads(path);
+			}
+		};
+	}
 	return 1;
 }
 

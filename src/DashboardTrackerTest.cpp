@@ -23,13 +23,26 @@ using namespace std::chrono;
 
 int initialiseVideo(VideoCapture& vCap, string path, int startFrame);
 
+void singleThreadTest() {
+
+	// 1. Setup video-capture
+	VideoCapture vCap;
+	string video_path = "../data/dashboardVid.mp4";
+	int startFrame = 10600;
+	bool success = initialiseVideo(vCap, video_path, startFrame);
+
+	if (success) {
+
+	}
+
+}
+
 void runThreadsOnHeap(string video_path) {
 	// 1. Setup video-capture
 	VideoCapture vCap;
 	//string path_ = "../data/dashboardVid.mp4";
 	int startFrame = 10600;
 	bool success = initialiseVideo(vCap, video_path, startFrame);
-	bool createOnStack = true;
 
 	if (success) {
 		// 2. Program flow-control variables

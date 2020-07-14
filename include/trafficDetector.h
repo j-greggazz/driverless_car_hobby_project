@@ -14,6 +14,8 @@ public:
 	void setDnnNet(cv::dnn::Net net);
 	cv::dnn::Net getDnnNet();
 	void detectObject();
+	void setModelTxt(std::string);
+	void setModelBin(std::string);
 	void detectObject(std::vector<cv::Rect2d>& trackBoxVec, std::mutex& mt_trackbox);
 	std::string getModelTxt();
 	std::string getModel();

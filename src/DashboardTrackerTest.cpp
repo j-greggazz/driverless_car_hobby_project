@@ -44,6 +44,8 @@ void runThreadsOnHeap(string video_path) {
 	int startFrame = 10600;
 	bool success = initialiseVideo(vCap, video_path, startFrame);
 
+
+
 	if (success) {
 		// 2. Program flow-control variables
 		char quit = 0;
@@ -299,7 +301,7 @@ void runThreadsOnStack(string video_path) {
 	VideoCapture vCap;
 	string path_ = "../data/dashboardVid.mp4";
 	int startFrame = 10600;
-	bool success = initialiseVideo(vCap, path_, startFrame);
+	bool success = initialiseVideo(vCap, video_path, startFrame);
 
 
 	if (success) {
@@ -542,14 +544,23 @@ void runThreadsOnStack(string video_path) {
 
 }
 
-void runStaticMethodThreads(string video_path) {
-	//AutoDrive ad(LineDetector ld, TrafficDetector td, CarTracker ct);
+void runStaticMethodThreads(string video_path, string cur_dir) {
 
+	// 0. Determine working directory for reference to loaded models, data
+	int pos = cur_dir.find_last_of("/\\");
+	std::string filename = cur_dir.substr(pos + 1);
+	std::string slash = "\\";
+	slash.append(filename);
+	std::string folder = cur_dir.substr(0, cur_dir.size() - slash.size());
+	pos = folder.find_last_of("/\\");
+	std::cout << "folder: " << folder.substr(pos + 1) << std::endl;
+	folder = folder.substr(pos + 1);
+	
 	// 1. Setup video-capture
 	VideoCapture vCap;
 	string path_ = "../data/dashboardVid.mp4";
 	int startFrame = 10500;
-	bool success = initialiseVideo(vCap, path_, startFrame);
+	bool success = initialiseVideo(vCap, video_path, startFrame);
 
 	if (success) {
 		// 2. Program flow-control variables
@@ -613,6 +624,11 @@ void runStaticMethodThreads(string video_path) {
 			// 7.3. Declare traffic-detector object
 			TrafficDetector td;
 			td.setRoiBox(cb.configParams.roi_Box_car);
+
+			if (folder == "Release") {
+				td.setModelTxt("../../models/MobileNetSSD_deploy.prototxt.txt");
+				td.setModelBin("../../models/MobileNetSSD_deploy.caffemodel");
+			}
 
 			try {
 				td.setDnnNet(dnn::readNetFromCaffe(td.getModelTxt(), td.getModel()));

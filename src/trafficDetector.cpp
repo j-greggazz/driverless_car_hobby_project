@@ -8,6 +8,16 @@ void TrafficDetector::detectObject() {
 
 }
 
+void TrafficDetector::setModelTxt(std::string modelText_)
+{
+	modelTxt = modelText_;
+}
+
+void TrafficDetector::setModelBin(std::string binText_)
+{
+	modelBin = binText_;
+}
+
 void TrafficDetector::detectObject(std::vector<cv::Rect2d>& trackBoxVec, std::mutex& mt_trackbox)
 {
 

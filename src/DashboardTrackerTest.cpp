@@ -1,5 +1,6 @@
 #include <lineDetector.h>
 #include <trafficDetector.h>
+#include <contourDetector.h>
 #include <carTracker.h>
 #include <dashboardTracker.h>
 #include <calibParams.h>
@@ -23,18 +24,57 @@ using namespace std::chrono;
 
 int initialiseVideo(VideoCapture& vCap, string path, int startFrame);
 
-void singleThreadTest() {
+void singleThreadContourTest() {
 
 	// 1. Setup video-capture
 	VideoCapture vCap;
 	string video_path = "../data/dashboardVid.mp4";
 	int startFrame = 10600;
+	char quit = 0;
+	int processedFrames = 0;
+	int frameCount = 0;
+
 	bool success = initialiseVideo(vCap, video_path, startFrame);
 
 	if (success) {
+		// 5. Start Setup of program
+		Mat frame;
+		vCap.read(frame);
+		CalibParams cb;
+		CalibParams::setup(cb, frame);
+		ContourDetector cd;
+		cd.setParams(cb.getPreprocessParams(), cb.getHoughParams(), cb.configParams.roi_Box_car);
 
+		cd.setCurrImg(frame);
+		while (vCap.isOpened() && quit != 113) {
+			bool imgShown = false;
+			if (processedFrames == frameCount) {
+				vCap.read(frame);
+				cd.setCurrImg(frame);
+				frameCount++;
+				bool wait = true;
+				cd.detectObject();
+				while (wait) {
+					if (cd.getImgProcessed()) {
+						wait = false;
+						processedFrames++;
+					}
+					else {
+						this_thread::sleep_for(milliseconds(100));
+					}
+				}
+				if (!imgShown) {
+					Mat temp;
+					cv::resize(cd.getShowImg(), temp, cv::Size(), 0.75, 0.75);
+
+					imshow("Frame_i", temp);
+					waitKey(100);
+					imgShown = true;
+				}
+			}
+
+		}
 	}
-
 }
 
 void runThreadsOnHeap(string video_path) {
@@ -289,7 +329,7 @@ void runThreadsOnHeap(string video_path) {
 	}
 
 	else {
-	cout << "invalid file provided. " << endl;
+		cout << "invalid file provided. " << endl;
 	}
 	return;
 }
@@ -436,6 +476,7 @@ void runThreadsOnStack(string video_path) {
 					imgAvailable[threadNum] = true;
 					DashboardTrackers[threadNum].setCurrImg(frame);
 				}
+
 				threadNum++;
 				frameCount++;
 				if (threadNum == 3) {
@@ -555,7 +596,7 @@ void runStaticMethodThreads(string video_path, string cur_dir) {
 	pos = folder.find_last_of("/\\");
 	std::cout << "folder: " << folder.substr(pos + 1) << std::endl;
 	folder = folder.substr(pos + 1);
-	
+
 	// 1. Setup video-capture
 	VideoCapture vCap;
 	string path_ = "../data/dashboardVid.mp4";

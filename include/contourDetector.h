@@ -10,9 +10,9 @@ class ContourDetector : public LineDetector {
 public:
 	void detectObject();
 	
+	cv::Mat getShowImg();
 
-
-
+	void setParams(preprocessParams pParams, houghParams hParams, cv::Rect roi_Bbox);
 
 
 
@@ -23,9 +23,9 @@ private:
 	preprocessImgs preprocessImg;
 	houghParams houghVar;
 	std::vector<std::vector<cv::Point>> contours;
-	cv::Rect roi_Bbox;
 	double epsilon;
 	int id;
+	cv::Mat showImg;
 
 
 

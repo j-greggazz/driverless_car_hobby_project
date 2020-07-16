@@ -16,19 +16,19 @@ using namespace std;
 void runThreadsOnHeap(string video_path);
 void runThreadsOnStack(string video_path);
 void runStaticMethodThreads(string video_path, std::string cur_dir);
+void singleThreadContourTest();
 
 int main(int argc, char *argv[])
 {
-	std::string cur_dir(argv[0]);
-
-	bool testContours = false;
+	bool testContours = true;
 
 	if (testContours) {
 
-
+		singleThreadContourTest();
 	}
 
 	else {
+		std::string cur_dir(argv[0]);
 		QApplication a(argc, argv);
 		MainWindow w;
 		w.show();

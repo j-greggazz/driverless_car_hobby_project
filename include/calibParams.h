@@ -35,9 +35,9 @@ public:
 
 		// Car Roi Properties
 		int x1_roi_car = 0;
-		int y1_roi_car = 629;
+		int y1_roi_car = 845;// 629;
 		int recWidth_car = 1489;
-		int recHeight_car = 300;
+		int recHeight_car = 141;// 300;
 		cv::Rect roi_Box_car = cv::Rect(x1_roi_car, y1_roi_car, recWidth_car, recHeight_car);
 		cv::Mat roiImg_car;
 

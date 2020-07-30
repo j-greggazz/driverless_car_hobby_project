@@ -9,7 +9,7 @@ ObjectDetector::ObjectDetector()
 }
 
 ObjectDetector::ObjectDetector(int iD) {
-	id = iD;
+	m_id = iD;
 }
 
 ObjectDetector:: ~ObjectDetector() {};
@@ -19,38 +19,38 @@ ObjectDetector:: ~ObjectDetector() {};
 
 // - Getters
 int ObjectDetector::getId() {
-	return id;
+	return m_id;
 }
 cv::Mat ObjectDetector::getCurrImg()
 {
-	return currImg;
+	return m_currImg;
 }
 
 
 cv::Rect ObjectDetector::getRoiBox() {
-	return roi_Bbox;
+	return m_roi_Bbox;
 }
 
 bool ObjectDetector::getImgProcessed() {
-	return imgProcessed;
+	return m_imgProcessed;
 }
 
 // - Setters
 void ObjectDetector::setId(int iD) {
-	id = iD;
+	m_id = iD;
 }
 
 void ObjectDetector::setCurrImg(cv::Mat& curr_Img) {
-	currImg = curr_Img.clone();
+	m_currImg = curr_Img.clone();
 }
 
 
 void ObjectDetector::setRoiBox(cv::Rect roi_Bbox_) {
-	roi_Bbox = roi_Bbox_;
+	m_roi_Bbox = roi_Bbox_;
 }
 
 void ObjectDetector::setImgProcessed(bool img_processed) {
-	imgProcessed = img_processed;
+	m_imgProcessed = img_processed;
 }
 
 

@@ -25,19 +25,36 @@ public:
 		float newCols;
 		float newRows;
 
+#if 0:
 		// Lane Roi Properties
-		int x1_roi = 400;
-		int y1_roi = 854;
-		int recWidth = 850;
-		int recHeight = 96;
+		int x1_roi = int(400 * 480 / 1080);
+		int y1_roi = int(854 * 360 / 1080);
+		int recWidth = int(850 * 480 / 1080);
+		int recHeight = int(96 * 360 / 1080);
 		cv::Rect roi_Bbox = cv::Rect(x1_roi, y1_roi, recWidth, recHeight);
 		cv::Mat roiImg;
 
 		// Car Roi Properties
 		int x1_roi_car = 0;
-		int y1_roi_car = 845;// 629;
-		int recWidth_car = 1489;
-		int recHeight_car = 141;// 300;
+		int y1_roi_car = int(629 * 360 / 1080); //845;
+		int recWidth_car = int(1489 * 480 / 1080);
+		int recHeight_car = int(300 * 360 / 1080); // 141;
+		cv::Rect roi_Box_car = cv::Rect(x1_roi_car, y1_roi_car, recWidth_car, recHeight_car);
+		cv::Mat roiImg_car;
+#endif
+		// Lane Roi Properties
+		int x1_roi = 400;  //390
+		int y1_roi = 854;  //622
+		int recWidth = 850;  //1400
+		int recHeight = 96;  //405
+		cv::Rect roi_Bbox = cv::Rect(x1_roi, y1_roi, recWidth, recHeight);
+		cv::Mat roiImg;
+
+		// Car Roi Properties
+		int x1_roi_car = 0;  
+		int y1_roi_car = 629;   //371
+		int recWidth_car = 1489;  //1727
+		int recHeight_car = 300;   //439
 		cv::Rect roi_Box_car = cv::Rect(x1_roi_car, y1_roi_car, recWidth_car, recHeight_car);
 		cv::Mat roiImg_car;
 
@@ -132,10 +149,10 @@ public:
 
 //private:
 	// member variables
-	ConfigParams configParams;
-	preprocessParams preprocessVar;
-	preprocessImgs preprocessImg;
-	houghParams houghVar;
+	ConfigParams m_configParams;
+	preprocessParams m_preprocessVar;
+	preprocessImgs m_preprocessImg;
+	houghParams m_houghVar;
 
 
 

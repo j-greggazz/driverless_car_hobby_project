@@ -52,12 +52,12 @@ public:
 
 private:
 
-	LineDetector ld;
-	TrafficDetector td;
-	CarTracker ct;
-	cv::Mat currImg;
-	int id;
-	bool imgProcessed = false; 
+	LineDetector m_ld;
+	TrafficDetector m_td;
+	CarTracker m_ct;
+	cv::Mat m_currImg;
+	int m_id;
+	bool m_imgProcessed = false;
 
 
 

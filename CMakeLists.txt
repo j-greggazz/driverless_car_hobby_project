@@ -12,10 +12,14 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
 find_package(OpenCV 4.0 REQUIRED)
+#set(OpenCV_FOUND 1)
+#set(OpenCV_DIR "C:/Users/gregg/Documents/OpenCV/opencv-4.0.1/opencv-4.0.1/build/install/")
 find_package(Qt5 COMPONENTS Core Gui Widgets REQUIRED)
 
 include_directories(include/ ${OpenCV_INCLUDE_DIR})
+#set (CMAKE_PREFIX_PATH "C:\\Qt\\5.15.0\\msvc2019_64\\")
 
+#C:\Qt\5.15.0\msvc2019_64
 SET(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 add_library(CalibrationParameters STATIC src/calibParams.cpp include/calibParams.h)

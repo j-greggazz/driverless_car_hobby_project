@@ -3,13 +3,13 @@ using namespace cv;
 using namespace std;
 
 DashboardTracker::DashboardTracker(int iD, LineDetector& lD, TrafficDetector& tD, CarTracker& cT) {
-	id = iD;
-	ld = lD;
-	td = tD;
-	ct = cT;
-	ld.setId(iD);
-	td.setId(iD);
-	ct.setId(iD);
+	m_id = iD;
+	m_ld = lD;
+	m_td = tD;
+	m_ct = cT;
+	m_ld.setId(iD);
+	m_td.setId(iD);
+	m_ct.setId(iD);
 }
 
 DashboardTracker::DashboardTracker()
@@ -24,60 +24,60 @@ DashboardTracker::~DashboardTracker()
 
 int DashboardTracker::getId()
 {
-	return id;
+	return m_id;
 }
 
 void DashboardTracker::setLd(LineDetector lD)
 {
-	ld = lD;
+	m_ld = lD;
 }
 
 void DashboardTracker::setCt(CarTracker cT)
 {
-	ct = cT;
+	m_ct = cT;
 }
 
 void DashboardTracker::setTd(TrafficDetector tD)
 {
-	td = tD;
+	m_td = tD;
 }
 
 void DashboardTracker::setCurrImg(cv::Mat curr_Img)
 {
-	currImg = curr_Img.clone();
-	ld.setCurrImg(curr_Img);
-	td.setCurrImg(curr_Img);
-	ct.setCurrImg(curr_Img);
+	m_currImg = curr_Img.clone();
+	m_ld.setCurrImg(curr_Img);
+	m_td.setCurrImg(curr_Img);
+	m_ct.setCurrImg(curr_Img);
 }
 
 cv::Mat DashboardTracker::getCurrImg()
 {
-	return currImg;
+	return m_currImg;
 }
 
 LineDetector DashboardTracker::getLd()
 {
-	return ld;
+	return m_ld;
 }
 
 TrafficDetector DashboardTracker::getTd()
 {
-	return td;
+	return m_td;
 }
 
 CarTracker DashboardTracker::getCt()
 {
-	return ct;
+	return m_ct;
 }
 
 void DashboardTracker::setImgProcessed(bool status)
 {
-	imgProcessed = status;
+	m_imgProcessed = status;
 }
 
 bool DashboardTracker::getImgProcessed()
 {
-	return imgProcessed;
+	return m_imgProcessed;
 }
 
 std::thread DashboardTracker::dashboardThread(std::vector<bool>& imgAvailable, std::atomic<bool>& stopThreads, std::vector<cv::Rect2d>& trackBoxVec, std::vector<int> &trackingStatus, std::vector<std::vector<cv::Vec4i>>& lines, std::mutex& imgAvailableGuard, std::mutex& trackingStatusGuard, std::mutex& mt_trackbox, std::mutex& lines_reserve) {
@@ -93,12 +93,12 @@ void DashboardTracker::runThread(std::vector<bool>& imgAvail, std::atomic<bool>&
 	int trackStatus;
 	Rect2d trackBox;
 	Rect2d trackBox_empty;
-	Rect2d roi_tracker_box = td.getRoiBox();
+	Rect2d roi_tracker_box = m_td.getRoiBox();
 	bool updateSuccess;
 	bool imgAvailable;
-	td.setId(this->id);
-	ld.setId(this->id);
-	ct.setId(this->id);
+	m_td.setId(this->m_id);
+	m_ld.setId(this->m_id);
+	m_ct.setId(this->m_id);
 	std::string CLASSES[21] = { "background", "aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable",
 									"dog", "horse", "motorbike", "person", "pottedplant", "sheep","sofa", "train", "tvmonitor" };
 	int countsSinceLastSearch = 20;
@@ -114,7 +114,7 @@ void DashboardTracker::runThread(std::vector<bool>& imgAvail, std::atomic<bool>&
 		imgAvailable = false;
 		{
 			const std::lock_guard<mutex> lock(imgAvailableGuard);
-			imgAvailable = imgAvail[id];
+			imgAvailable = imgAvail[m_id];
 		}
 
 		if (imgAvailable) {
@@ -122,32 +122,32 @@ void DashboardTracker::runThread(std::vector<bool>& imgAvail, std::atomic<bool>&
 
 			{   // Writing
 				const std::lock_guard<mutex> lock(imgAvailableGuard);
-				imgProcessed = false;
-				imgAvail[id] = false;
-				img = currImg.clone();
+				m_imgProcessed = false;
+				imgAvail[m_id] = false;
+				img = m_currImg.clone();
 			}
 
 			// Step 1: Lane Detection
 			auto start = std::chrono::high_resolution_clock::now();
-			ld.detectObject();
+			m_ld.detectObject();
 
 			{
 				// Writing
 				const std::lock_guard<mutex> lock(lines_reserve);
-				lines[id] = ld.getHoughParams().lines;
-				trackStatus = trackingStatus[id];
+				lines[m_id] = m_ld.getHoughParams().lines;
+				trackStatus = trackingStatus[m_id];
 				auto finish = std::chrono::high_resolution_clock::now();
 				std::chrono::duration<double> elapsed = finish - start;
 				std::cout << "Line detection took : " << elapsed.count() << " s\n";
 			}
 
 			// Optional Step 2: If no tracker instantiated, keep detecting
-			if (trackStatus == 0 & countsSinceLastSearch >= 20)
+			if ((trackStatus == 0) & (countsSinceLastSearch >= 20))
 
 			{
 				countsSinceLastSearch = 0;
 				auto start = std::chrono::high_resolution_clock::now();
-				td.detectObject(trackBoxVec, mt_trackbox);
+				m_td.detectObject(trackBoxVec, mt_trackbox);
 				auto finish = std::chrono::high_resolution_clock::now();
 				std::chrono::duration<double> elapsed = finish - start;
 				{
@@ -156,15 +156,15 @@ void DashboardTracker::runThread(std::vector<bool>& imgAvail, std::atomic<bool>&
 					std::cout << "Traffic detection took : " << elapsed.count() << " s\n";
 				}
 
-				trackStatus = td.getTrackStatus();
+				trackStatus = m_td.getTrackStatus();
 				if (trackStatus == 1) {
-					trackBox = td.getTrackbox();
-					ct.initTracker(img(roi_tracker_box), trackBox);
+					trackBox = m_td.getTrackbox();
+					m_ct.initTracker(img(roi_tracker_box), trackBox);
 
 					{
 						// Writing
 						const std::lock_guard<mutex> lock(trackingStatusGuard);
-						trackingStatus[id] = 1;
+						trackingStatus[m_id] = 1;
 						trackStatus = 1;
 					}
 				}
@@ -175,8 +175,8 @@ void DashboardTracker::runThread(std::vector<bool>& imgAvail, std::atomic<bool>&
 					// Writing
 					const std::lock_guard<mutex> lock(trackingStatusGuard);
 					auto start = std::chrono::high_resolution_clock::now();
-					updateSuccess = ct.updateTracker(img(roi_tracker_box), trackBox);
-					trackBoxVec[id] = trackBox;
+					updateSuccess = m_ct.updateTracker(img(roi_tracker_box), trackBox);
+					trackBoxVec[m_id] = trackBox;
 					auto finish = std::chrono::high_resolution_clock::now();
 					std::chrono::duration<double> elapsed = finish - start;
 					std::cout << "Update took : " << elapsed.count() << " s\n";
@@ -216,7 +216,7 @@ void DashboardTracker::runThread(std::vector<bool>& imgAvail, std::atomic<bool>&
 					if (trackStatus == 2) {
 						{   // Writing
 							const std::lock_guard<mutex> lock(trackingStatusGuard);
-							trackingStatus[id] = 1;
+							trackingStatus[m_id] = 1;
 						}
 					}
 				}
@@ -228,15 +228,15 @@ void DashboardTracker::runThread(std::vector<bool>& imgAvail, std::atomic<bool>&
 						{   // Writing
 							const std::lock_guard<mutex> lock(mt_trackbox);
 							trackStatus = 0;
-							trackingStatus[id] = trackStatus;
-							trackBoxVec[id] = trackBox_empty;
+							trackingStatus[m_id] = trackStatus;
+							trackBoxVec[m_id] = trackBox_empty;
 						}
 					}
 
 					else {
 						{   // Writing
 							const std::lock_guard<mutex> lock(trackingStatusGuard);
-							trackingStatus[id] = 2;
+							trackingStatus[m_id] = 2;
 						}
 					}
 				}
@@ -246,7 +246,7 @@ void DashboardTracker::runThread(std::vector<bool>& imgAvail, std::atomic<bool>&
 			else {
 				countsSinceLastSearch++;
 			}
-			imgProcessed = true;
+			m_imgProcessed = true;
 		}
 	}
 	this_thread::sleep_for(chrono::milliseconds(10));
@@ -527,10 +527,10 @@ void DashboardTracker::dashboardTrackersThread(DashboardTracker& aD, vector<bool
 
 void DashboardTracker::setId(int iD)
 {
-	id = iD;
-	ld.setId(id);
-	td.setId(id);
-	ct.setId(id);
+	m_id = iD;
+	m_ld.setId(m_id);
+	m_td.setId(m_id);
+	m_ct.setId(m_id);
 }
 
 

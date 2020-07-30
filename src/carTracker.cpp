@@ -7,57 +7,67 @@ using namespace std;
 void CarTracker::declareTracker(string trackerType)
 {
 	if (trackerType == "BOOSTING")
-		tracker = TrackerBoosting::create();
+		m_tracker = TrackerBoosting::create();
 	if (trackerType == "MIL")
-		tracker = TrackerMIL::create();
+		m_tracker = TrackerMIL::create();
 	if (trackerType == "KCF")
-		tracker = TrackerKCF::create();
+		m_tracker = TrackerKCF::create();
 	if (trackerType == "TLD")
-		tracker = TrackerTLD::create();
+		m_tracker = TrackerTLD::create();
 	if (trackerType == "MEDIANFLOW")
-		tracker = TrackerMedianFlow::create();
+		m_tracker = TrackerMedianFlow::create();
 	if (trackerType == "GOTURN")
-		tracker = TrackerGOTURN::create();
+		m_tracker = TrackerGOTURN::create();
 	if (trackerType == "MOSSE")
-		tracker = TrackerMOSSE::create();
+		m_tracker = TrackerMOSSE::create();
 	if (trackerType == "CSRT")
-		tracker = TrackerCSRT::create();
+		m_tracker = TrackerCSRT::create();
 }
 
 void CarTracker::initTracker(cv::Mat frame, cv::Rect2d trackBox)
 {
-	tracker->init(frame, trackBox);
-	trackerExists = true;
+	m_tracker->init(frame, trackBox);
+	m_trackerExists = true;
 }
 
 bool CarTracker::updateTracker(cv::Mat& frame, cv::Rect2d& trackBox)
 {
-	return tracker->update(frame, trackBox);
+	return m_tracker->update(frame, trackBox);
 }
 
 void CarTracker::setId(int iD)
 {
-	id = iD;
+	m_id = iD;
 }
 
 void CarTracker::setCurrImg(cv::Mat & curr_Img)
 {
-	currImg = curr_Img.clone();
+	m_currImg = curr_Img.clone();
 }
 
 cv::Mat CarTracker::getCurrImg()
 {
-	return currImg;
+	return m_currImg;
+}
+
+std::vector<cv::Ptr<cv::Tracker>> CarTracker::getTrackersVec()
+{
+	return m_trackersVec;
+}
+
+void CarTracker::setTrackersVec(std::vector<cv::Ptr<cv::Tracker>> newTrackersVec)
+{
+	m_trackersVec = newTrackersVec;
 }
 
 cv::Ptr<cv::Tracker> CarTracker::getTracker()
 {
-	return tracker;
+	return m_tracker;
 }
 
 void CarTracker::setTracker(cv::Ptr<cv::Tracker> tracker_)
 {
-	tracker = tracker_;
+	m_tracker = tracker_;
 }
 
 

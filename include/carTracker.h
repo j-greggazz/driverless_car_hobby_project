@@ -25,14 +25,19 @@ public:
 	void setId(int iD);
 	void setCurrImg(cv::Mat& curr_Img);
 	cv::Mat getCurrImg();
+	std::vector<cv::Ptr<cv::Tracker>> getTrackersVec();
+	void setTrackersVec(std::vector<cv::Ptr<cv::Tracker>> newTrackersVec);
 
 private:
 
-	cv::Ptr<cv::Tracker> tracker;
-	bool trackerExists;
-	int trackingStatus;
-	int id;
-	cv::Mat currImg;
+	cv::Ptr<cv::Tracker> m_tracker;
+	bool m_trackerExists;
+	int m_trackingStatus;
+	int m_id;
+	cv::Mat m_currImg;
+
+	// Cuda variables:
+	std::vector<cv::Ptr<cv::Tracker>> m_trackersVec;
 
 
 

@@ -17,14 +17,23 @@ void runThreadsOnHeap(string video_path);
 void runThreadsOnStack(string video_path);
 void runStaticMethodThreads(string video_path, std::string cur_dir);
 void singleThreadContourTest();
+void testGPUFunctions();
 
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
-	bool testContours = true;
+	/*To use CUDA as the backend of OpenCV DNN module, you can simply add these two lines after you load the pre-trained model:
+	https://cuda-chen.github.io/image%20processing/programming/2020/02/22/build-opencv-dnn-module-with-nvidia-gpu-support-on-ubuntu-1804.html
+	// C++
+	net.setPreferableBackend(cv::dnn::DNN_BACKEND_CUDA);
+	net.setPreferableTarget(cv::dnn::DNN_TARGET_CUDA);
+	*/
+	bool singleTest = false;
 
-	if (testContours) {
-
-		singleThreadContourTest();
+	if (singleTest) {
+#if HAS_CUDA
+		testGPUFunctions();
+#endif
+		//singleThreadContourTest();
 	}
 
 	else {

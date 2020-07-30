@@ -5,20 +5,20 @@ using namespace std;
 
 void CalibParams::houghCParameters() {
 
-	namedWindow(this->configParams.houghCWindowName, WINDOW_AUTOSIZE);
-	moveWindow(this->configParams.houghCWindowName, int(2 * this->configParams.screenWidth / 3), int(this->configParams.screenHeight / 2));
-	resizeWindow(this->configParams.houghCWindowName, int(configParams.newCols), int(configParams.newRows));
+	namedWindow(this->m_configParams.houghCWindowName, WINDOW_AUTOSIZE);
+	moveWindow(this->m_configParams.houghCWindowName, int(2 * this->m_configParams.screenWidth / 3), int(this->m_configParams.screenHeight / 2));
+	resizeWindow(this->m_configParams.houghCWindowName, int(m_configParams.newCols), int(m_configParams.newRows));
 
-	createTrackbar("minRadius", this->configParams.houghCWindowName, &this->configParams.minRadius, int(this->configParams.minRadius * 2.5), houghC_Callback, &this->configParams);
-	createTrackbar("maxRadius", this->configParams.houghCWindowName, &this->configParams.maxRadius, int(this->configParams.maxRadius * 2.5), houghC_Callback, &this->configParams);
-	createTrackbar("minDistBtw", this->configParams.houghCWindowName, &this->configParams.minDistBtwCenters, int(this->configParams.minDistBtwCenters * 2.5), houghC_Callback, &this->configParams);
-	createTrackbar("cntrThresh", this->configParams.houghCWindowName, &this->configParams.centreThresh, int(this->configParams.centreThresh * 2.5), houghC_Callback, &this->configParams);
+	createTrackbar("minRadius", this->m_configParams.houghCWindowName, &this->m_configParams.minRadius, int(this->m_configParams.minRadius * 2.5), houghC_Callback, &this->m_configParams);
+	createTrackbar("maxRadius", this->m_configParams.houghCWindowName, &this->m_configParams.maxRadius, int(this->m_configParams.maxRadius * 2.5), houghC_Callback, &this->m_configParams);
+	createTrackbar("minDistBtw", this->m_configParams.houghCWindowName, &this->m_configParams.minDistBtwCenters, int(this->m_configParams.minDistBtwCenters * 2.5), houghC_Callback, &this->m_configParams);
+	createTrackbar("cntrThresh", this->m_configParams.houghCWindowName, &this->m_configParams.centreThresh, int(this->m_configParams.centreThresh * 2.5), houghC_Callback, &this->m_configParams);
 
 	waitKey();
-	if (!this->configParams.terminateSetup) {
+	if (!this->m_configParams.terminateSetup) {
 		destroyAllWindows();
 		updateParams();
-		this->configParams.terminateSetup = true;
+		this->m_configParams.terminateSetup = true;
 	}
 	//destroyWindow(this->configParams.houghCWindowName);
 };
@@ -40,20 +40,20 @@ void CalibParams::houghC_Callback(int, void *userdata) {
 
 void CalibParams::houghLParametersP() {
 
-	namedWindow(this->configParams.houghWindowName, WINDOW_AUTOSIZE);
-	moveWindow(this->configParams.houghWindowName, int(2 * this->configParams.screenWidth / 3), 0);
-	resizeWindow(this->configParams.houghWindowName, int(configParams.newCols), int(configParams.newRows));
+	namedWindow(this->m_configParams.houghWindowName, WINDOW_AUTOSIZE);
+	moveWindow(this->m_configParams.houghWindowName, int(2 * this->m_configParams.screenWidth / 3), 0);
+	resizeWindow(this->m_configParams.houghWindowName, int(m_configParams.newCols), int(m_configParams.newRows));
 
-	createTrackbar("minVotes", this->configParams.houghWindowName, &this->configParams.minVotes, this->configParams.minVotesLim, houghLPCallback, &this->configParams);
-	createTrackbar("minLength", this->configParams.houghWindowName, &this->configParams.minLineLength, this->configParams.minLineLengthLimit, houghLPCallback, &this->configParams);
-	createTrackbar("maxGap", this->configParams.houghWindowName, &this->configParams.maxLineGap, this->configParams.maxLineGapLimit, houghLPCallback, &this->configParams);
+	createTrackbar("minVotes", this->m_configParams.houghWindowName, &this->m_configParams.minVotes, this->m_configParams.minVotesLim, houghLPCallback, &this->m_configParams);
+	createTrackbar("minLength", this->m_configParams.houghWindowName, &this->m_configParams.minLineLength, this->m_configParams.minLineLengthLimit, houghLPCallback, &this->m_configParams);
+	createTrackbar("maxGap", this->m_configParams.houghWindowName, &this->m_configParams.maxLineGap, this->m_configParams.maxLineGapLimit, houghLPCallback, &this->m_configParams);
 
 	houghCParameters();
 	waitKey();
-	if (!this->configParams.terminateSetup) {
+	if (!this->m_configParams.terminateSetup) {
 		destroyAllWindows();
 		updateParams();
-		this->configParams.terminateSetup = true;
+		this->m_configParams.terminateSetup = true;
 	}
 	//destroyWindow(this->configParams.houghWindowName);
 };
@@ -82,22 +82,22 @@ void CalibParams::houghLPCallback(int, void *userdata) {
 
 void CalibParams::morphParametersP2() {
 
-	namedWindow(this->configParams.morphWindowName2, WINDOW_AUTOSIZE);
+	namedWindow(this->m_configParams.morphWindowName2, WINDOW_AUTOSIZE);
 
 	//imshow(title, Img); // Show our image inside it.  // 
-	moveWindow(this->configParams.morphWindowName2, int(this->configParams.screenWidth / 3), int(this->configParams.screenHeight / 2));
-	resizeWindow(this->configParams.morphWindowName2, int(configParams.newCols), int(configParams.newRows));
+	moveWindow(this->m_configParams.morphWindowName2, int(this->m_configParams.screenWidth / 3), int(this->m_configParams.screenHeight / 2));
+	resizeWindow(this->m_configParams.morphWindowName2, int(m_configParams.newCols), int(m_configParams.newRows));
 
-	createTrackbar("MorphType", this->configParams.morphWindowName2, &this->configParams.morphTransformType_, 8, morphCallback2, &this->configParams);
-	createTrackbar("KernelSize", this->configParams.morphWindowName2, &this->configParams.kernel_morph_size_, 5, morphCallback2, &this->configParams);
+	createTrackbar("MorphType", this->m_configParams.morphWindowName2, &this->m_configParams.morphTransformType_, 8, morphCallback2, &this->m_configParams);
+	createTrackbar("KernelSize", this->m_configParams.morphWindowName2, &this->m_configParams.kernel_morph_size_, 5, morphCallback2, &this->m_configParams);
 	//createTrackbar("MorphShape", this->configParams.morphWindowName, &this->configParams.morph_elem_shape, 2, edgeDetectCallback, &this->configParams);
 
 	houghLParametersP();
 	waitKey();
-	if (!this->configParams.terminateSetup) {
+	if (!this->m_configParams.terminateSetup) {
 		destroyAllWindows();
 		updateParams();
-		this->configParams.terminateSetup = true;
+		this->m_configParams.terminateSetup = true;
 	}
 }
 void CalibParams::morphCallback2(int, void *userdata) {
@@ -142,20 +142,20 @@ void CalibParams::morphCallback2(int, void *userdata) {
 
 void CalibParams::morphParametersP() {
 
-	namedWindow(this->configParams.morphWindowName, WINDOW_AUTOSIZE);
-	moveWindow(this->configParams.morphWindowName, int(this->configParams.screenWidth / 3), 0);
-	resizeWindow(this->configParams.morphWindowName, int(configParams.newCols), int(configParams.newRows));
+	namedWindow(this->m_configParams.morphWindowName, WINDOW_AUTOSIZE);
+	moveWindow(this->m_configParams.morphWindowName, int(this->m_configParams.screenWidth / 3), 0);
+	resizeWindow(this->m_configParams.morphWindowName, int(m_configParams.newCols), int(m_configParams.newRows));
 
-	createTrackbar("MorphType", this->configParams.morphWindowName, &this->configParams.morphTransformType, 8, morphCallback, &this->configParams);
-	createTrackbar("KernelSize", this->configParams.morphWindowName, &this->configParams.kernel_morph_size, 5, morphCallback, &this->configParams);
-	//createTrackbar("MorphShape", this->configParams.morphWindowName, &this->configParams.morph_elem_shape, 2, edgeDetectCallback, &this->configParams);
+	createTrackbar("MorphType", this->m_configParams.morphWindowName, &this->m_configParams.morphTransformType, 8, morphCallback, &this->m_configParams);
+	createTrackbar("KernelSize", this->m_configParams.morphWindowName, &this->m_configParams.kernel_morph_size, 5, morphCallback, &this->m_configParams);
+	//createTrackbar("MorphShape", this->m_configParams.morphWindowName, &this->m_configParams.morph_elem_shape, 2, edgeDetectCallback, &this->configParams);
 	
 	morphParametersP2();
 	waitKey();
-	if (!this->configParams.terminateSetup) {
+	if (!this->m_configParams.terminateSetup) {
 		destroyAllWindows();
 		updateParams();
-		this->configParams.terminateSetup = true;
+		this->m_configParams.terminateSetup = true;
 	}
 }
 void CalibParams::morphCallback(int, void *userdata) {
@@ -200,20 +200,20 @@ void CalibParams::morphCallback(int, void *userdata) {
 
 void CalibParams::edgeParametersP() {
 
-	namedWindow(this->configParams.edgeWindowName, WINDOW_AUTOSIZE);
-	resizeWindow(this->configParams.edgeWindowName, int(configParams.newCols), int(configParams.newRows));
-	moveWindow(this->configParams.edgeWindowName, 0, int(this->configParams.screenHeight / 2));
+	namedWindow(this->m_configParams.edgeWindowName, WINDOW_AUTOSIZE);
+	resizeWindow(this->m_configParams.edgeWindowName, int(m_configParams.newCols), int(m_configParams.newRows));
+	moveWindow(this->m_configParams.edgeWindowName, 0, int(this->m_configParams.screenHeight / 2));
 
-	createTrackbar("BlurLevel", this->configParams.edgeWindowName, &this->configParams.gauss_ksize, 15, edgeDetectCallback, &this->configParams);
-	createTrackbar("CannyLow", this->configParams.edgeWindowName, &this->configParams.lowThresh, 100, edgeDetectCallback, &this->configParams);
-	createTrackbar("CannyHigh", this->configParams.edgeWindowName, &this->configParams.highThresh, 150, edgeDetectCallback, &this->configParams);
+	createTrackbar("BlurLevel", this->m_configParams.edgeWindowName, &this->m_configParams.gauss_ksize, 15, edgeDetectCallback, &this->m_configParams);
+	createTrackbar("CannyLow", this->m_configParams.edgeWindowName, &this->m_configParams.lowThresh, 100, edgeDetectCallback, &this->m_configParams);
+	createTrackbar("CannyHigh", this->m_configParams.edgeWindowName, &this->m_configParams.highThresh, 150, edgeDetectCallback, &this->m_configParams);
 
 	morphParametersP();
 	waitKey();
-	if (!this->configParams.terminateSetup) {
+	if (!this->m_configParams.terminateSetup) {
 		destroyAllWindows();
 		updateParams();
-		this->configParams.terminateSetup = true;
+		this->m_configParams.terminateSetup = true;
 	}
 };
 void CalibParams::edgeDetectCallback(int, void *userdata) {
@@ -258,19 +258,19 @@ void CalibParams::edgeDetectCallback(int, void *userdata) {
 
 void CalibParams::blurThreshParametersP() {
 
-	namedWindow(this->configParams.blurThreshWindowName, WINDOW_AUTOSIZE);
-	resizeWindow(this->configParams.blurThreshWindowName, int(configParams.newCols), int(configParams.newRows));
-	moveWindow(this->configParams.blurThreshWindowName, 0, 0);
+	namedWindow(this->m_configParams.blurThreshWindowName, WINDOW_AUTOSIZE);
+	resizeWindow(this->m_configParams.blurThreshWindowName, int(m_configParams.newCols), int(m_configParams.newRows));
+	moveWindow(this->m_configParams.blurThreshWindowName, 0, 0);
 
-	createTrackbar("BlurLevel", this->configParams.blurThreshWindowName, &this->configParams.gauss_ksize, 10, blurThreshCallback, &this->configParams);
+	createTrackbar("BlurLevel", this->m_configParams.blurThreshWindowName, &this->m_configParams.gauss_ksize, 10, blurThreshCallback, &this->m_configParams);
 	//createTrackbar("TheshLevel", this->configParams.BlurThreshWindowName, &this->configParams.thresBin, 255, blurThreshCallback, &this->configParams);
 
 	edgeParametersP();
 	waitKey();
-	if (!this->configParams.terminateSetup) {
+	if (!this->m_configParams.terminateSetup) {
 		destroyAllWindows();
 		updateParams();
-		this->configParams.terminateSetup = true;
+		this->m_configParams.terminateSetup = true;
 	}
 }
 void CalibParams::blurThreshCallback(int, void *userdata) {
@@ -301,8 +301,8 @@ void CalibParams::blurThreshCallback(int, void *userdata) {
 
 void CalibParams::setup(CalibParams & cb_, cv::Mat & img)
 {
-	int maxHeight = int(cb_.configParams.screenHeight / 2);
-	int maxWidth = int(cb_.configParams.screenWidth / 3);
+	int maxHeight = int(cb_.m_configParams.screenHeight / 2);
+	int maxWidth = int(cb_.m_configParams.screenWidth / 3);
 
 	int new_cols = int(float(maxHeight) / float(img.rows) * img.cols);
 	int new_rows = int(float(maxWidth) / float(img.cols) * img.rows);
@@ -315,36 +315,36 @@ void CalibParams::setup(CalibParams & cb_, cv::Mat & img)
 		new_rows = maxHeight;
 	}
 
-	cb_.configParams.newCols = new_cols;
-	cb_.configParams.newRows = new_rows;
-	cb_.configParams.recHeight = new_rows;
-	cb_.configParams.recWidth = new_cols;
+	cb_.m_configParams.newCols = new_cols;
+	cb_.m_configParams.newRows = new_rows;
+	cb_.m_configParams.recHeight = new_rows;
+	cb_.m_configParams.recWidth = new_cols;
 
 	cv::Mat m;
 	const std::string winName = "Background";
 	cv::namedWindow(winName, cv::WINDOW_AUTOSIZE);
-	m.create(int(cb_.configParams.screenHeight*0.95), cb_.configParams.screenWidth, CV_32FC3);
+	m.create(int(cb_.m_configParams.screenHeight*0.95), cb_.m_configParams.screenWidth, CV_32FC3);
 	m.setTo(cv::Scalar(255, 255, 255));
 	moveWindow(winName, 0, 0);
 	cv::imshow(winName, m);
 
-	cb_.configParams.origImg = img.clone();
+	cb_.m_configParams.origImg = img.clone();
 	cb_.setLane_ROIBox();
 	cb_.setCarDetectionROIBox();
 
 }
 
 void CalibParams::setLane_ROIBox() {
-	namedWindow(this->configParams.roiBoxWindowName, WINDOW_AUTOSIZE);
-	resizeWindow(this->configParams.roiBoxWindowName, int(configParams.newCols), int(configParams.newRows));
-	moveWindow(this->configParams.roiBoxWindowName, 0, 0);
-	size_t max_val_x = this->configParams.origImg.cols;
-	size_t max_val_y = this->configParams.origImg.rows;
+	namedWindow(this->m_configParams.roiBoxWindowName, WINDOW_AUTOSIZE);
+	resizeWindow(this->m_configParams.roiBoxWindowName, int(m_configParams.newCols), int(m_configParams.newRows));
+	moveWindow(this->m_configParams.roiBoxWindowName, 0, 0);
+	size_t max_val_x = this->m_configParams.origImg.cols;
+	size_t max_val_y = this->m_configParams.origImg.rows;
 
-	createTrackbar("X1-Pos", this->configParams.roiBoxWindowName, &this->configParams.x1_roi, max_val_x, roiLaneCallback, &this->configParams);
-	createTrackbar("RecWidth", this->configParams.roiBoxWindowName, &this->configParams.recWidth, max_val_x, roiLaneCallback, &this->configParams);
-	createTrackbar("Y1-Pos", this->configParams.roiBoxWindowName, &this->configParams.y1_roi, max_val_y, roiLaneCallback, &this->configParams);
-	createTrackbar("RecHeight", this->configParams.roiBoxWindowName, &this->configParams.recHeight, max_val_y, roiLaneCallback, &this->configParams);
+	createTrackbar("X1-Pos", this->m_configParams.roiBoxWindowName, &this->m_configParams.x1_roi, max_val_x, roiLaneCallback, &this->m_configParams);
+	createTrackbar("RecWidth", this->m_configParams.roiBoxWindowName, &this->m_configParams.recWidth, max_val_x, roiLaneCallback, &this->m_configParams);
+	createTrackbar("Y1-Pos", this->m_configParams.roiBoxWindowName, &this->m_configParams.y1_roi, max_val_y, roiLaneCallback, &this->m_configParams);
+	createTrackbar("RecHeight", this->m_configParams.roiBoxWindowName, &this->m_configParams.recHeight, max_val_y, roiLaneCallback, &this->m_configParams);
 
 	edgeParametersP();
 	waitKey();
@@ -382,15 +382,15 @@ void CalibParams::roiLaneCallback(int, void *userdata) {
 
 
 void CalibParams::setCarDetectionROIBox() {
-	namedWindow(this->configParams.roiBoxWindowName_car, WINDOW_AUTOSIZE);
-	//moveWindow(this->configParams.roiBoxWindowName_car, 0, 0);
-	size_t max_val_x = this->configParams.origImg.cols;
-	size_t max_val_y = this->configParams.origImg.rows;
+	namedWindow(this->m_configParams.roiBoxWindowName_car, WINDOW_AUTOSIZE);
+	//moveWindow(this->m_configParams.roiBoxWindowName_car, 0, 0);
+	size_t max_val_x = this->m_configParams.origImg.cols;
+	size_t max_val_y = this->m_configParams.origImg.rows;
 
-	createTrackbar("X1-Pos", this->configParams.roiBoxWindowName_car, &this->configParams.x1_roi_car, max_val_x, roiCarCallback, &this->configParams);
-	createTrackbar("RecWidth", this->configParams.roiBoxWindowName_car, &this->configParams.recWidth_car, max_val_x, roiCarCallback, &this->configParams);
-	createTrackbar("Y1-Pos", this->configParams.roiBoxWindowName_car, &this->configParams.y1_roi_car, max_val_y, roiCarCallback, &this->configParams);
-	createTrackbar("RecHeight", this->configParams.roiBoxWindowName_car, &this->configParams.recHeight_car, max_val_y, roiCarCallback, &this->configParams);
+	createTrackbar("X1-Pos", this->m_configParams.roiBoxWindowName_car, &this->m_configParams.x1_roi_car, max_val_x, roiCarCallback, &this->m_configParams);
+	createTrackbar("RecWidth", this->m_configParams.roiBoxWindowName_car, &this->m_configParams.recWidth_car, max_val_x, roiCarCallback, &this->m_configParams);
+	createTrackbar("Y1-Pos", this->m_configParams.roiBoxWindowName_car, &this->m_configParams.y1_roi_car, max_val_y, roiCarCallback, &this->m_configParams);
+	createTrackbar("RecHeight", this->m_configParams.roiBoxWindowName_car, &this->m_configParams.recHeight_car, max_val_y, roiCarCallback, &this->m_configParams);
 	waitKey();
 	destroyAllWindows();
 };
@@ -615,31 +615,31 @@ void CalibParams::drawLines(ConfigParams* configParams, cv::Mat& img, std::vecto
 
 void CalibParams::updateParams()
 {
-	houghVar.minVotes = configParams.minVotes;
-	houghVar.minLineLength = configParams.minLineLength;
-	houghVar.maxLineGap = configParams.maxLineGap;
-	houghVar.lineThickness = configParams.lineThickness;
+	m_houghVar.minVotes = m_configParams.minVotes;
+	m_houghVar.minLineLength = m_configParams.minLineLength;
+	m_houghVar.maxLineGap = m_configParams.maxLineGap;
+	m_houghVar.lineThickness = m_configParams.lineThickness;
 
-	preprocessVar.cannyKernelSize = configParams.cannyKernel;
-	preprocessVar.cannyHighTresh = configParams.highThresh;
-	preprocessVar.cannyLowThresh = configParams.lowThresh;
-	preprocessVar.gaussKernelSize = configParams.gauss_ksize;
-	preprocessVar.morphElemShape = configParams.morph_elem_shape;
-	preprocessVar.morphTransformType1 = configParams.morphTransformType;
-	preprocessVar.morphKernelSize1 = configParams.kernel_morph_size;
-	preprocessVar.morphTransformType2 = configParams.morphTransformType_;
-	preprocessVar.morphKernelSize2 = configParams.kernel_morph_size_;
+	m_preprocessVar.cannyKernelSize = m_configParams.cannyKernel;
+	m_preprocessVar.cannyHighTresh = m_configParams.highThresh;
+	m_preprocessVar.cannyLowThresh = m_configParams.lowThresh;
+	m_preprocessVar.gaussKernelSize = m_configParams.gauss_ksize;
+	m_preprocessVar.morphElemShape = m_configParams.morph_elem_shape;
+	m_preprocessVar.morphTransformType1 = m_configParams.morphTransformType;
+	m_preprocessVar.morphKernelSize1 = m_configParams.kernel_morph_size;
+	m_preprocessVar.morphTransformType2 = m_configParams.morphTransformType_;
+	m_preprocessVar.morphKernelSize2 = m_configParams.kernel_morph_size_;
 
 }
 
 LineDetector::preprocessParams CalibParams::getPreprocessParams()
 {
-	return preprocessVar;
+	return m_preprocessVar;
 }
 
 LineDetector::houghParams CalibParams::getHoughParams()
 {
-	return houghVar;
+	return m_houghVar;
 }
 
 

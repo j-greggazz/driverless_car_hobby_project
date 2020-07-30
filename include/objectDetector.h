@@ -14,7 +14,7 @@
 #include <vector>
 #include <iostream>
 #include <mutex>
-
+#define HAS_CUDA 1
 
 class ObjectDetector {
 
@@ -43,9 +43,9 @@ public:
 
 private:
 	// Member Variables
-	int id;
-	cv::Rect roi_Bbox;// = cv::Rect(x1_roi, y1_roi, recWidth, recHeight);
-	cv::Mat currImg;
-	bool imgProcessed;
+	int m_id;
+	cv::Rect m_roi_Bbox;// = cv::Rect(x1_roi, y1_roi, recWidth, recHeight);
+	cv::Mat m_currImg;
+	bool m_imgProcessed;
 };
 #endif 

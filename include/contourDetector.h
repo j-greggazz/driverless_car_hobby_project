@@ -19,13 +19,13 @@ public:
 
 
 private:
-	preprocessParams preprocessVar;
-	preprocessImgs preprocessImg;
-	houghParams houghVar;
-	std::vector<std::vector<cv::Point>> contours;
-	double epsilon;
-	int id;
-	cv::Mat showImg;
+	preprocessParams m_preprocessVar;
+	preprocessImgs m_preprocessImg;
+	houghParams m_houghVar;
+	std::vector<std::vector<cv::Point>> m_contours;
+	double m_epsilon;
+	int m_id;
+	cv::Mat m_showImg;
 
 
 

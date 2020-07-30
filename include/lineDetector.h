@@ -3,6 +3,8 @@
 #define lineDetector__H__
 
 #include <objectDetector.h>
+#include <opencv2/cudaimgproc.hpp>
+#include <opencv2/cudafilters.hpp>
 
 class LineDetector : public ObjectDetector {
 
@@ -43,8 +45,6 @@ public:
 	preprocessParams getPreprocessParams();
 	houghParams getHoughParams();
 
-	// Base class constructor-destructor used 
-
 	// Class Specific Methods
 	void preprocImg();
 	void detectLines();
@@ -57,13 +57,27 @@ public:
 	// Implement virtual function of base class
 	void detectObject();
 
+	// Cuda Methods
+	cv::Mat getfinishedImg();
+
 	
 private:
 
-	preprocessParams preprocessVar;
-	preprocessImgs preprocessImg;
-	houghParams houghVar;
+	preprocessParams m_preprocessVar;
+	preprocessImgs m_preprocessImg;
+	houghParams m_houghVar;
 	int id;
+
+#if HAS_CUDA
+	cv::Ptr<cv::cuda::HoughSegmentDetector> m_HoughDetector;
+	cv::Ptr<cv::cuda::CannyEdgeDetector> m_CannyDetector;
+	cv::Ptr<cv::cuda::Filter> m_BoxFilter;
+	cv::Ptr<cv::cuda::Filter> m_morphFilter_1;
+	cv::Ptr<cv::cuda::Filter> m_morphFilter_2;
+	std::vector<cv::Vec4i> m_lines;
+	cv::Mat finishedImg;
+	
+#endif	
 
 };
 #endif 

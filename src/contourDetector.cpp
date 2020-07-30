@@ -11,34 +11,34 @@ void ContourDetector::detectObject() {
 	vector<Vec4i> hierarchy;
 	setImgProcessed(false);
 	cv::Mat temp, temp2;
-	preprocessImg.roiImg = LineDetector::getCurrImg()(getRoiBox()).clone();
+	m_preprocessImg.roiImg = LineDetector::getCurrImg()(getRoiBox()).clone();
 	
 	// 1. Blur
-	if (preprocessVar.gaussKernelSize > 0) {
-		cvtColor(preprocessImg.roiImg, temp, COLOR_BGR2GRAY);
-		blur(temp, temp2, Size(preprocessVar.gaussKernelSize, preprocessVar.gaussKernelSize), Point(-1, -1));
+	if (m_preprocessVar.gaussKernelSize > 0) {
+		cvtColor(m_preprocessImg.roiImg, temp, COLOR_BGR2GRAY);
+		blur(temp, temp2, Size(m_preprocessVar.gaussKernelSize, m_preprocessVar.gaussKernelSize), Point(-1, -1));
 		GaussianBlur(temp2, temp, Size(5, 5), 2, 2);
 	}
 
 	// 2. Canny Edge Detection
 	if (!temp.empty()) {
-		Canny(temp, temp, preprocessVar.cannyLowThresh, preprocessVar.cannyHighTresh, preprocessVar.cannyKernelSize + 3);
+		Canny(temp, temp, m_preprocessVar.cannyLowThresh, m_preprocessVar.cannyHighTresh, m_preprocessVar.cannyKernelSize + 3);
 		//setCannyImg(temp.clone());
 	}
 
 	// 3. Remove Noise
 	if (!temp.empty()) {
-		Mat element = getStructuringElement(MORPH_CROSS, Size(preprocessVar.morphKernelSize1 + 1, preprocessVar.morphKernelSize1 + 1));//, Point(edgeConfig->kernel_morph_size, edgeConfig->kernel_morph_size));
+		Mat element = getStructuringElement(MORPH_CROSS, Size(m_preprocessVar.morphKernelSize1 + 1, m_preprocessVar.morphKernelSize1 + 1));//, Point(edgeConfig->kernel_morph_size, edgeConfig->kernel_morph_size));
 		dilate(temp, temp, element, Point(-1, -1), 1, 1, 1);
 		erode(temp, temp, element, Point(-1, -1), 1, 1, 1);
 		dilate(temp, temp, element, Point(-1, -1), 2, 1, 1);
 	}
 	std::vector<cv::Vec4i> linesTemp;
-	cv::HoughLinesP(temp, linesTemp, 1, CV_PI / 180, houghVar.minVotes, houghVar.minLineLength, houghVar.maxLineGap);
-	houghVar.lines = linesTemp;
+	cv::HoughLinesP(temp, linesTemp, 1, CV_PI / 180, m_houghVar.minVotes, m_houghVar.minLineLength, m_houghVar.maxLineGap);
+	m_houghVar.lines = linesTemp;
 	int x_offset = getRoiBox().x;
 	int y_offset = getRoiBox().y;
-	houghVar.lines.clear();
+	m_houghVar.lines.clear();
 	
 	temp2 = getCurrImg();
 	for (auto it = linesTemp.begin(); it != linesTemp.end(); ++it) {
@@ -56,7 +56,7 @@ void ContourDetector::detectObject() {
 			float yc = b.y - m * a.y;
 			if (((m >= 0.43 & m <= 0.58) & (abs(a.y - b.y) > 10)) | (m >= -0.75  & m <= -0.62)) {
 				//houghVar.lines.push_back(line);
-				cv::line(temp2, a, b, Scalar(0, 0, 255), houghVar.lineThickness, LINE_AA);
+				cv::line(temp2, a, b, Scalar(0, 0, 255), m_houghVar.lineThickness, LINE_AA);
 			}
 		}
 	}
@@ -92,21 +92,21 @@ void ContourDetector::detectObject() {
 	//contours = contours_;
 
 
-	showImg = preprocessImg.roiImg;
-	showImg = temp2;
+	m_showImg = m_preprocessImg.roiImg;
+	m_showImg = temp2;
 	setImgProcessed(true);
 
 }
 
 cv::Mat ContourDetector::getShowImg()
 {
-	return showImg;
+	return m_showImg;
 }
 
 void ContourDetector::setParams(preprocessParams pParams, houghParams hParams, cv::Rect roi_Bbox)
 {
-	houghVar = hParams;
-	preprocessVar = pParams;
+	m_houghVar = hParams;
+	m_preprocessVar = pParams;
 	ObjectDetector::setRoiBox(roi_Bbox);
 }
 

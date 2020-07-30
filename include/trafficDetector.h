@@ -24,6 +24,7 @@ public:
 	cv::Rect2d getTrackbox();
 	void setTrackerLabel(std::string trackerLabel);
 	std::string getTrackerLabel();
+	std::vector<cv::Rect2d> getTrackBoxVec();
 
 private:
 	cv::dnn::Net dnnNet;
@@ -39,6 +40,7 @@ private:
 	cv::Rect2d td_trackbox;
 	std::string tracker_label;
 	int id;
+	std::vector<cv::Rect2d> m_trackBoxVec;
 
 };
 #endif 

@@ -38,6 +38,7 @@ int main(int argc, char* argv[])
 
 	else {
 		std::string cur_dir(argv[0]);
+		cout << cur_dir << endl;
 		QApplication a(argc, argv);
 		MainWindow w;
 		w.show();

@@ -1,0 +1,7 @@
+/build
+/data
+/models
+/lib
+QT_links.txt
+dependencies_required_dlls.png
+CMakeLists_working_old.txt

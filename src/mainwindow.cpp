@@ -1,5 +1,6 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QDir>
@@ -31,6 +32,7 @@ void MainWindow::on_selectVideo_clicked()
     QString file_name = QFileDialog::getOpenFileName(this, "Open a file", QDir::homePath());
     QMessageBox::information(this, "Chosen File", file_name);
     vidPath = file_name.toUtf8().constData();
+	
 	ui->path_valid_checkbox->setChecked(true);
 	setStyleSheet("background-image: url(:../data/beach.jpg);");
 }

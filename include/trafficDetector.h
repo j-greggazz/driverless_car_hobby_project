@@ -35,8 +35,8 @@ private:
 	int failCounter;
 	int trackingStatus; // If 0 no tracker instantiated, if 1 tracker instantiated and tracking, if 2 tracker instantiated however has lost initial tracked object 
 	int countsSinceLastSearch;
-	std::string modelTxt = "../models/MobileNetSSD_deploy.prototxt.txt";
-	std::string modelBin = "../models/MobileNetSSD_deploy.caffemodel";
+	std::string modelTxt = "../../models/MobileNetSSD_deploy.prototxt.txt";
+	std::string modelBin = "../../models/MobileNetSSD_deploy.caffemodel";
 	cv::Rect2d td_trackbox;
 	std::string tracker_label;
 	int id;

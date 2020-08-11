@@ -37,7 +37,7 @@ public:
 		int minVotes;
 		int minLineLength;
 		int maxLineGap;
-		int lineThickness;
+		int lineThickness = 2;
 		std::vector<cv::Vec4i> lines;
 		cv::Point line1_pt1, line1_pt2, line2_pt1, line2_pt2; // lane dimensions
 	};
@@ -48,7 +48,7 @@ public:
 	// Class Specific Methods
 	void preprocImg();
 	void detectLines();
-	void drawLines(cv::Mat& img, bool detectLanes = true);
+	void drawLines(cv::Mat& img, bool detectLanes = true, bool keepOnlyCertainAngles = false);
 
 	// Getters - Setters
 	void setLines(std::vector<cv::Vec4i> lines_);

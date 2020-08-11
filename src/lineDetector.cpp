@@ -147,7 +147,7 @@ cv::Mat LineDetector::getfinishedImg()
 	return finishedImg;
 }
 #endif
-void LineDetector::drawLines(Mat& img, bool detectLanes)
+void LineDetector::drawLines(Mat& img, bool detectLanes, bool keepOnlyCertainAngles)
 {
 	int x_offset = getRoiBox().x;
 	int y_offset = getRoiBox().y;
@@ -194,6 +194,20 @@ void LineDetector::drawLines(Mat& img, bool detectLanes)
 					count_2 += 1;
 				}
 			}
+			
+			else if (keepOnlyCertainAngles) {
+				float m = float(b.y - a.y) / float(b.x - a.x);
+				float yc = b.y - m * a.y;
+				if (m >= 0.43 & m <= 0.56) {
+
+					cv::line(img, a, b, Scalar(0, 0, 255), m_houghVar.lineThickness, LINE_AA);
+				}
+
+				else if (m >= -0.75 & m <= -0.62) {
+					cv::line(img, a, b, Scalar(0, 0, 255), m_houghVar.lineThickness, LINE_AA);
+				}
+			}
+
 			else {
 				cv::line(img, a, b, Scalar(0, 0, 255), m_houghVar.lineThickness, LINE_AA);
 			}
@@ -266,6 +280,7 @@ void LineDetector::drawLines(Mat& img, bool detectLanes)
 		}
 		cout << avgMLane1 << " " << avgMLane2 << " " << m_houghVar.line1_pt1 << " " << m_houghVar.line1_pt2 << " " << m_houghVar.line2_pt1 << " " << m_houghVar.line2_pt2 << endl;
 	}
+
 
 }
 

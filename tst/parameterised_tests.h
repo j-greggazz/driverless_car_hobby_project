@@ -10,7 +10,7 @@ class OpenCV_API_ParamTest :public ::testing::TestWithParam<int> {
 public:
     int trackerIndex;
     
-    
+    bool tempVar;
 };
 
 #endif //EXAMPLEPROJECT_FORMULA_H

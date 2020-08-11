@@ -4,6 +4,7 @@
 
 #include <LineDetector.h>
 #include <CarTracker.h>
+#include "wtypes.h"
 
 class CalibParams : public LineDetector, CarTracker {
 
@@ -20,8 +21,8 @@ public:
 		const std::string houghWindowName = "5. Hough-Line Operations";
 		const std::string houghCWindowName = "6. Hough-Circle Operations";
 		const std::string roiBoxWindowName_car = "7. Set Roi-Box";
-		const int screenHeight = 1080; // 768;//1080;
-		const int screenWidth = 1920; //1366;//1920;
+		int screenHeight;// = 1080; // 768;//1080;
+		int screenWidth;// = 1920; //1366;//1920;
 		float newCols;
 		float newRows;
 
@@ -114,6 +115,7 @@ public:
 
 	/* -------------------- Preprocessing --------------------*/
 	//  -- Setup --
+	void getDesktopResolution();
 	static void setup(CalibParams& cb,  cv::Mat& img);
 
 	//  -- ROI Setting

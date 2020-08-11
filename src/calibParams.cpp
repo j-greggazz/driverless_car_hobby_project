@@ -22,20 +22,25 @@ void CalibParams::houghCParameters() {
 	}
 	//destroyWindow(this->configParams.houghCWindowName);
 };
-void CalibParams::houghC_Callback(int, void *userdata) {
+void CalibParams::houghC_Callback(int, void* userdata) {
 
-	ConfigParams *configP = reinterpret_cast<ConfigParams *>(userdata);
+	ConfigParams* configP = reinterpret_cast<ConfigParams*>(userdata);
 	Mat houghImg = configP->morphImg2.clone();
 
 	// 2. Determine elliptical shapes:
 	vector<Vec3f> circles;
 	Mat houghTransform = configP->origImg.clone();
 	// int minRadiusOffset = configP->minRadius + 
-	cv::HoughCircles(houghImg, circles, HOUGH_GRADIENT, configP->dp, configP->minDistBtwCenters, configP->highThresh, configP->centreThresh, configP->minRadius, configP->maxRadius);
-
+	try {
+		cv::HoughCircles(houghImg, circles, HOUGH_GRADIENT, configP->dp, configP->minDistBtwCenters, configP->highThresh, configP->centreThresh, configP->minRadius, configP->maxRadius);
+	}
+	catch (cv::Exception) {
+		cout << "Please set roi-box first." << endl;
+	
 	int img_num = 5;
 	//drawLines(configP, houghTransform, lines);
 	displayImg(houghTransform, configP->houghCWindowName, configP->screenWidth, configP->screenHeight, img_num);
+	}
 }
 
 void CalibParams::houghLParametersP() {
@@ -57,28 +62,34 @@ void CalibParams::houghLParametersP() {
 	}
 	//destroyWindow(this->configParams.houghWindowName);
 };
-void CalibParams::houghLPCallback(int, void *userdata) {
+void CalibParams::houghLPCallback(int, void* userdata) {
 
-	ConfigParams *configP = reinterpret_cast<ConfigParams *>(userdata);
+	ConfigParams* configP = reinterpret_cast<ConfigParams*>(userdata);
 	Mat houghImg = configP->morphImg2.clone();
 
 	// 1. Determine hough lines:
 	vector<Vec4i> lines;
-	HoughLinesP(houghImg, lines, 1, CV_PI / 180, configP->minVotes, configP->minLineLength, configP->maxLineGap);
-	
-	configP->edgeLines = lines;
-	Mat houghTransform = configP->origImg.clone();
-	/*
-	// 2. Determine elliptical shapes:
-	vector<Vec3f> circles;
-	cv::HoughCircles(houghImg, circles, HOUGH_GRADIENT, configP->dp, configP->minDistBtwCenters, configP->highThresh, configP->centreThresh, configP->minRadius, configP->maxRadius);
-	*/
-	int img_num = 4;
-	drawLines(configP, houghTransform, lines);
-	//drawCircles(configP, houghTransform, circles);
-	displayImg(houghTransform, configP->houghWindowName, configP->screenWidth, configP->screenHeight, img_num);
-	houghC_Callback(0, configP);
+	try {
+		HoughLinesP(houghImg, lines, 1, CV_PI / 180, configP->minVotes, configP->minLineLength, configP->maxLineGap);
+
+		configP->edgeLines = lines;
+		Mat houghTransform = configP->origImg.clone();
+		/*
+		// 2. Determine elliptical shapes:
+		vector<Vec3f> circles;
+		cv::HoughCircles(houghImg, circles, HOUGH_GRADIENT, configP->dp, configP->minDistBtwCenters, configP->highThresh, configP->centreThresh, configP->minRadius, configP->maxRadius);
+		*/
+		int img_num = 4;
+		drawLines(configP, houghTransform, lines);
+		//drawCircles(configP, houghTransform, circles);
+		displayImg(houghTransform, configP->houghWindowName, configP->screenWidth, configP->screenHeight, img_num);
+		houghC_Callback(0, configP);
+	}
+	catch (cv::Exception) {
+		cout << "Please set roi-box first." << endl;
+	}
 }
+
 
 void CalibParams::morphParametersP2() {
 
@@ -100,44 +111,48 @@ void CalibParams::morphParametersP2() {
 		this->m_configParams.terminateSetup = true;
 	}
 }
-void CalibParams::morphCallback2(int, void *userdata) {
-	ConfigParams *configP = reinterpret_cast<ConfigParams *>(userdata);
+void CalibParams::morphCallback2(int, void* userdata) {
+	ConfigParams* configP = reinterpret_cast<ConfigParams*>(userdata);
 	int operation = configP->morphTransformType_ + 1;
 
 	Mat morphImg2 = configP->morphImg.clone();
+	try {
+		// Morphological Operations:
+		if (operation > 3) {
+			Mat str_element = getStructuringElement(configP->morph_elem_shape, Size(2 * configP->kernel_morph_size_ + 1, 2 * configP->kernel_morph_size_ + 1), Point(configP->kernel_morph_size_, configP->kernel_morph_size_));
+			operation -= 2;
+			morphologyEx(morphImg2, morphImg2, operation, str_element);
+		}
+		else if (operation == 1) {
+			//if (erosion_elem == 0) { erosion_type = MORPH_RECT; }
+			//else if (erosion_elem == 1) { erosion_type = MORPH_CROSS; }
+			//else if (erosion_elem == 2) { erosion_type = MORPH_ELLIPSE; }
 
-	// Morphological Operations:
-	if (operation > 3) {
-		Mat str_element = getStructuringElement(configP->morph_elem_shape, Size(2 * configP->kernel_morph_size_ + 1, 2 * configP->kernel_morph_size_ + 1), Point(configP->kernel_morph_size_, configP->kernel_morph_size_));
-		operation -= 2;
-		morphologyEx(morphImg2, morphImg2, operation, str_element);
+			Mat element = getStructuringElement(MORPH_CROSS, Size(configP->kernel_morph_size_ + 1, configP->kernel_morph_size_ + 1));//, Point(configP->kernel_morph_size, configP->kernel_morph_size));
+			erode(morphImg2, morphImg2, element, Point(-1, -1), 2, 1, 1);
+		}
+
+		else if (operation == 2) {
+			//if (erosion_elem == 0) { erosion_type = MORPH_RECT; }
+			//else if (erosion_elem == 1) { erosion_type = MORPH_CROSS; }
+			//else if (erosion_elem == 2) { erosion_type = MORPH_ELLIPSE; }
+
+			Mat element = getStructuringElement(MORPH_RECT, Size(configP->kernel_morph_size_ + 1, configP->kernel_morph_size_ + 1), Point(configP->kernel_morph_size_, configP->kernel_morph_size_));
+			dilate(morphImg2, morphImg2, element);
+		}
+
+		if (morphImg2.empty()) {
+			morphImg2 = configP->origImg;
+		}
+		configP->morphImg2 = morphImg2;
+
+		int img_num = 3;
+		displayImg(morphImg2, configP->morphWindowName2, configP->screenWidth, configP->screenHeight, img_num);
+		houghLPCallback(0, configP);
 	}
-	else if (operation == 1) {
-		//if (erosion_elem == 0) { erosion_type = MORPH_RECT; }
-		//else if (erosion_elem == 1) { erosion_type = MORPH_CROSS; }
-		//else if (erosion_elem == 2) { erosion_type = MORPH_ELLIPSE; }
-
-		Mat element = getStructuringElement(MORPH_CROSS, Size(configP->kernel_morph_size_ + 1, configP->kernel_morph_size_ + 1));//, Point(configP->kernel_morph_size, configP->kernel_morph_size));
-		erode(morphImg2, morphImg2, element, Point(-1, -1), 2, 1, 1);
+	catch (cv::Exception) {
+		cout << "Please set roi-box first." << endl;
 	}
-
-	else if (operation == 2) {
-		//if (erosion_elem == 0) { erosion_type = MORPH_RECT; }
-		//else if (erosion_elem == 1) { erosion_type = MORPH_CROSS; }
-		//else if (erosion_elem == 2) { erosion_type = MORPH_ELLIPSE; }
-
-		Mat element = getStructuringElement(MORPH_RECT, Size(configP->kernel_morph_size_ + 1, configP->kernel_morph_size_ + 1), Point(configP->kernel_morph_size_, configP->kernel_morph_size_));
-		dilate(morphImg2, morphImg2, element);
-	}
-
-	if (morphImg2.empty()) {
-		morphImg2 = configP->origImg;
-	}
-	configP->morphImg2 = morphImg2;
-
-	int img_num = 3;
-	displayImg(morphImg2, configP->morphWindowName2, configP->screenWidth, configP->screenHeight, img_num);
-	houghLPCallback(0, configP);
 }
 
 void CalibParams::morphParametersP() {
@@ -149,7 +164,7 @@ void CalibParams::morphParametersP() {
 	createTrackbar("MorphType", this->m_configParams.morphWindowName, &this->m_configParams.morphTransformType, 8, morphCallback, &this->m_configParams);
 	createTrackbar("KernelSize", this->m_configParams.morphWindowName, &this->m_configParams.kernel_morph_size, 5, morphCallback, &this->m_configParams);
 	//createTrackbar("MorphShape", this->m_configParams.morphWindowName, &this->m_configParams.morph_elem_shape, 2, edgeDetectCallback, &this->configParams);
-	
+
 	morphParametersP2();
 	waitKey();
 	if (!this->m_configParams.terminateSetup) {
@@ -158,44 +173,48 @@ void CalibParams::morphParametersP() {
 		this->m_configParams.terminateSetup = true;
 	}
 }
-void CalibParams::morphCallback(int, void *userdata) {
-	ConfigParams *configP = reinterpret_cast<ConfigParams *>(userdata);
+void CalibParams::morphCallback(int, void* userdata) {
+	ConfigParams* configP = reinterpret_cast<ConfigParams*>(userdata);
 	int operation = configP->morphTransformType + 1;
 
 	Mat morphImg = configP->cannyImg.clone();
+	try {
+		// Morphological Operations:
+		if (operation > 3) {
+			Mat str_element = getStructuringElement(configP->morph_elem_shape, Size(2 * configP->kernel_morph_size + 1, 2 * configP->kernel_morph_size + 1), Point(configP->kernel_morph_size, configP->kernel_morph_size));
+			operation -= 2;
+			morphologyEx(morphImg, morphImg, operation, str_element);
+		}
+		else if (operation == 1) {
+			//if (erosion_elem == 0) { erosion_type = MORPH_RECT; }
+			//else if (erosion_elem == 1) { erosion_type = MORPH_CROSS; }
+			//else if (erosion_elem == 2) { erosion_type = MORPH_ELLIPSE; }
 
-	// Morphological Operations:
-	if (operation > 3) {
-		Mat str_element = getStructuringElement(configP->morph_elem_shape, Size(2 * configP->kernel_morph_size + 1, 2 * configP->kernel_morph_size + 1), Point(configP->kernel_morph_size, configP->kernel_morph_size));
-		operation -= 2;
-		morphologyEx(morphImg, morphImg, operation, str_element);
+			Mat element = getStructuringElement(MORPH_CROSS, Size(configP->kernel_morph_size + 1, configP->kernel_morph_size + 1));//, Point(configP->kernel_morph_size, configP->kernel_morph_size));
+			erode(morphImg, morphImg, element, Point(-1, -1), 2, 1, 1);
+		}
+
+		else if (operation == 2) {
+			//if (erosion_elem == 0) { erosion_type = MORPH_RECT; }
+			//else if (erosion_elem == 1) { erosion_type = MORPH_CROSS; }
+			//else if (erosion_elem == 2) { erosion_type = MORPH_ELLIPSE; }
+
+			Mat element = getStructuringElement(MORPH_RECT, Size(configP->kernel_morph_size + 1, configP->kernel_morph_size + 1), Point(configP->kernel_morph_size, configP->kernel_morph_size));
+			dilate(morphImg, morphImg, element);
+		}
+
+		if (morphImg.empty()) {
+			morphImg = configP->origImg;
+		}
+		configP->morphImg = morphImg;
+
+		int img_num = 2;
+		displayImg(morphImg, configP->morphWindowName, configP->screenWidth, configP->screenHeight, img_num);
+		morphCallback2(0, configP);
 	}
-	else if (operation == 1) {
-		//if (erosion_elem == 0) { erosion_type = MORPH_RECT; }
-		//else if (erosion_elem == 1) { erosion_type = MORPH_CROSS; }
-		//else if (erosion_elem == 2) { erosion_type = MORPH_ELLIPSE; }
-
-		Mat element = getStructuringElement(MORPH_CROSS, Size(configP->kernel_morph_size + 1, configP->kernel_morph_size + 1));//, Point(configP->kernel_morph_size, configP->kernel_morph_size));
-		erode(morphImg, morphImg, element, Point(-1, -1), 2, 1, 1);
+	catch (cv::Exception) {
+		cout << "Please set roi-box first." << endl;
 	}
-
-	else if (operation == 2) {
-		//if (erosion_elem == 0) { erosion_type = MORPH_RECT; }
-		//else if (erosion_elem == 1) { erosion_type = MORPH_CROSS; }
-		//else if (erosion_elem == 2) { erosion_type = MORPH_ELLIPSE; }
-
-		Mat element = getStructuringElement(MORPH_RECT, Size(configP->kernel_morph_size + 1, configP->kernel_morph_size + 1), Point(configP->kernel_morph_size, configP->kernel_morph_size));
-		dilate(morphImg, morphImg, element);
-	}
-
-	if (morphImg.empty()) {
-		morphImg = configP->origImg;
-	}
-	configP->morphImg = morphImg;
-
-	int img_num = 2;
-	displayImg(morphImg, configP->morphWindowName, configP->screenWidth, configP->screenHeight, img_num);
-	morphCallback2(0, configP);
 }
 
 void CalibParams::edgeParametersP() {
@@ -216,44 +235,47 @@ void CalibParams::edgeParametersP() {
 		this->m_configParams.terminateSetup = true;
 	}
 };
-void CalibParams::edgeDetectCallback(int, void *userdata) {
-	ConfigParams *configP = reinterpret_cast<ConfigParams *>(userdata);
+void CalibParams::edgeDetectCallback(int, void* userdata) {
+	ConfigParams* configP = reinterpret_cast<ConfigParams*>(userdata);
 	int operation = configP->morphTransformType + 1;
 	int cannyKernelSize = configP->cannyKernel + 3;
 	cv::Mat cannyImg;
 	Mat img_ = configP->roiImg.clone();
-
-	// Blur:
-	if (configP->gauss_ksize > 0) {
-		cvtColor(img_, cannyImg, COLOR_BGR2GRAY);
-		blur(cannyImg, cannyImg, Size(configP->gauss_ksize, configP->gauss_ksize), Point(-1, -1));
-	}
-	// Edge Detection:
-	if (!cannyImg.empty()) {
-		if (configP->highThresh == 0) {
-			configP->highThresh++;
+	try {
+		// Blur:
+		if (configP->gauss_ksize > 0) {
+			cvtColor(img_, cannyImg, COLOR_BGR2GRAY);
+			blur(cannyImg, cannyImg, Size(configP->gauss_ksize, configP->gauss_ksize), Point(-1, -1));
 		}
-		Canny(cannyImg, cannyImg, configP->lowThresh, configP->highThresh, cannyKernelSize);
-		configP->cannyImg = cannyImg.clone();
-		int img_num = 1;
-		displayImg(cannyImg, configP->edgeWindowName, configP->screenWidth, configP->screenHeight, img_num);
-		morphCallback(0, configP);
-	}
-
-	if (0) {
-		if (img_.empty()) {
-			img_ = configP->origImg;
-			cannyImg = img_.clone();
-		}
-		else {
-
-			// Edge Detection:
-			Canny(img_, cannyImg, configP->lowThresh, configP->highThresh, cannyKernelSize);
+		// Edge Detection:
+		if (!cannyImg.empty()) {
+			if (configP->highThresh == 0) {
+				configP->highThresh++;
+			}
+			Canny(cannyImg, cannyImg, configP->lowThresh, configP->highThresh, cannyKernelSize);
 			configP->cannyImg = cannyImg.clone();
+			int img_num = 1;
+			displayImg(cannyImg, configP->edgeWindowName, configP->screenWidth, configP->screenHeight, img_num);
+			morphCallback(0, configP);
+		}
 
+		if (0) {
+			if (img_.empty()) {
+				img_ = configP->origImg;
+				cannyImg = img_.clone();
+			}
+			else {
+
+				// Edge Detection:
+				Canny(img_, cannyImg, configP->lowThresh, configP->highThresh, cannyKernelSize);
+				configP->cannyImg = cannyImg.clone();
+
+			}
 		}
 	}
-
+	catch (cv::Exception) {
+		cout << "Please set roi-box first." << endl;
+	}
 }
 
 void CalibParams::blurThreshParametersP() {
@@ -273,8 +295,8 @@ void CalibParams::blurThreshParametersP() {
 		this->m_configParams.terminateSetup = true;
 	}
 }
-void CalibParams::blurThreshCallback(int, void *userdata) {
-	ConfigParams *configP = reinterpret_cast<ConfigParams *>(userdata);
+void CalibParams::blurThreshCallback(int, void* userdata) {
+	ConfigParams* configP = reinterpret_cast<ConfigParams*>(userdata);
 	int operation = configP->morphTransformType + 1;
 	int cannyKernelSize = configP->cannyKernel + 3;
 	cv::Mat blurThreshImg = configP->origImg.clone();
@@ -299,8 +321,25 @@ void CalibParams::blurThreshCallback(int, void *userdata) {
 	edgeDetectCallback(0, configP);
 }
 
-void CalibParams::setup(CalibParams & cb_, cv::Mat & img)
+
+void CalibParams::getDesktopResolution() {
+
+	RECT desktop;
+	// Get a handle to the desktop window
+	const HWND hDesktop = GetDesktopWindow();
+	// Get the size of screen to the variable desktop
+	GetWindowRect(hDesktop, &desktop);
+	// The top left corner will have coordinates (0,0)
+	// and the bottom right corner will have coordinates
+	// (horizontal, vertical)
+	m_configParams.screenWidth = desktop.right;
+	m_configParams.screenHeight = desktop.bottom;
+}
+
+
+void CalibParams::setup(CalibParams& cb_, cv::Mat& img)
 {
+	cb_.getDesktopResolution();
 	int maxHeight = int(cb_.m_configParams.screenHeight / 2);
 	int maxWidth = int(cb_.m_configParams.screenWidth / 3);
 
@@ -323,7 +362,7 @@ void CalibParams::setup(CalibParams & cb_, cv::Mat & img)
 	cv::Mat m;
 	const std::string winName = "Background";
 	cv::namedWindow(winName, cv::WINDOW_AUTOSIZE);
-	m.create(int(cb_.m_configParams.screenHeight*0.95), cb_.m_configParams.screenWidth, CV_32FC3);
+	m.create(int(cb_.m_configParams.screenHeight * 0.95), cb_.m_configParams.screenWidth, CV_32FC3);
 	m.setTo(cv::Scalar(255, 255, 255));
 	moveWindow(winName, 0, 0);
 	cv::imshow(winName, m);
@@ -351,8 +390,8 @@ void CalibParams::setLane_ROIBox() {
 	//destroyAllWindows();
 	//destroyWindow(this->configParams.blurThreshWindowName);
 }
-void CalibParams::roiLaneCallback(int, void *userdata) {
-	ConfigParams *configP = reinterpret_cast<ConfigParams *>(userdata);  // cvtColor(params->colImg(params->config->roiBbox), params->grayImg, CV_RGB2GRAY);
+void CalibParams::roiLaneCallback(int, void* userdata) {
+	ConfigParams* configP = reinterpret_cast<ConfigParams*>(userdata);  // cvtColor(params->colImg(params->config->roiBbox), params->grayImg, CV_RGB2GRAY);
 
 
 	Mat img_ = configP->origImg.clone();
@@ -395,8 +434,8 @@ void CalibParams::setCarDetectionROIBox() {
 	destroyAllWindows();
 };
 
-void CalibParams::roiCarCallback(int, void *userdata) {
-	ConfigParams *configP = reinterpret_cast<ConfigParams *>(userdata);   // cvtColor(params->colImg(params->config->roiBbox), params->grayImg, CV_RGB2GRAY);
+void CalibParams::roiCarCallback(int, void* userdata) {
+	ConfigParams* configP = reinterpret_cast<ConfigParams*>(userdata);   // cvtColor(params->colImg(params->config->roiBbox), params->grayImg, CV_RGB2GRAY);
 	//setTrackbarPos("X1-Pos", configP->roiBoxWindowName_car, configP->x1_roi_car);
 	//setTrackbarPos("Y1-Pos", configP->roiBoxWindowName_car, configP->y1_roi_car);
 
@@ -423,7 +462,7 @@ void CalibParams::roiCarCallback(int, void *userdata) {
 	int img_num = -1;
 
 	displayImg(roiImg, configP->roiBoxWindowName_car, configP->screenWidth, configP->screenHeight, img_num);
-	
+
 };
 
 /* -------------------- Helper functions --------------------*/
@@ -431,73 +470,80 @@ void CalibParams::displayImg(Mat img, const std::string title, int screenWidth, 
 
 	//double img_width = img.cols;  //obtain size of image and halve it in order to fit 
 	//double img_height = img.rows;
-	int maxHeight = int(screenHeight / 2);
-	int maxWidth = int(screenWidth / 3);
+	try {
+		int maxHeight = int(screenHeight / 2);
+		int maxWidth = int(screenWidth / 3);
 
 
-	int new_cols = int(float(maxHeight) / float(img.rows) * img.cols);
-	int new_rows = int(float(maxWidth) / float(img.cols) * img.rows);
+		int new_cols = int(float(maxHeight) / float(img.rows) * img.cols);
+		int new_rows = int(float(maxWidth) / float(img.cols) * img.rows);
 
-	if (new_cols > maxWidth) {
-		new_cols = maxWidth;
-	}
-
-	else {
-		new_rows = maxHeight;
-	}
-
-
-	/*
-	int newCols;
-	int newRows;
-	int diff_height = maxHeight - img_height;
-	int diff_width = maxWidth - img_width;
-
-	if (diff_height > diff_width) {
-		newCols = maxWidth;
-		newRows = img.rows * newCols / img.cols;
-	}
-	else {
-		newRows = maxHeight;
-		newCols = img.cols * newRows / img.rows;
-	}
-	*/
-
-	if (img_num != -1) {
-
-		Mat img_;
-		//cout << float(newRows) / float(img.rows) << " " << float(newCols) / float(img.cols);
-		resize(img, img_, cv::Size(), float(new_rows) / float(img.rows), float(new_cols) / float(img.cols));
-
-		if (img_num == 0) {
-			moveWindow(title, 0, 0);
+		if (new_cols > maxWidth) {
+			new_cols = maxWidth;
 		}
 
-		else if (img_num == 1) {
-			moveWindow(title, 0, 1.1 * maxHeight);
-		}
-
-		else if (img_num == 2) {
-			moveWindow(title, new_cols, 0);
-		}
-
-		else if (img_num == 3) {
-			moveWindow(title, new_cols, 1.1 * maxHeight);
-		}
-
-		else if (img_num == 4) {
-			moveWindow(title, 2 * new_cols, 0);
+		else {
+			new_rows = maxHeight;
 		}
 
 
-		resizeWindow(title, img_.cols, img_.rows);
-		imshow(title, img_);
-	}
+		/*
+		int newCols;
+		int newRows;
+		int diff_height = maxHeight - img_height;
+		int diff_width = maxWidth - img_width;
 
-	else {
-		imshow(title, img);
+		if (diff_height > diff_width) {
+			newCols = maxWidth;
+			newRows = img.rows * newCols / img.cols;
+		}
+		else {
+			newRows = maxHeight;
+			newCols = img.cols * newRows / img.rows;
+		}
+		*/
+
+		if (img_num != -1) {
+
+			Mat img_;
+			//cout << float(newRows) / float(img.rows) << " " << float(newCols) / float(img.cols);
+			resize(img, img_, cv::Size(), float(new_rows) / float(img.rows), float(new_cols) / float(img.cols));
+
+			if (img_num == 0) {
+				moveWindow(title, 0, 0);
+			}
+
+			else if (img_num == 1) {
+				moveWindow(title, 0, 1.1 * maxHeight);
+			}
+
+			else if (img_num == 2) {
+				moveWindow(title, new_cols, 0);
+			}
+
+			else if (img_num == 3) {
+				moveWindow(title, new_cols, 1.1 * maxHeight);
+			}
+
+			else if (img_num == 4) {
+				moveWindow(title, 2 * new_cols, 0);
+			}
+
+
+			resizeWindow(title, img_.cols, img_.rows);
+			imshow(title, img_);
+		}
+
+		else {
+			imshow(title, img);
+		}
+	}
+	catch (cv::Exception) {
+
+		cout << "Defined window out of bounds." << endl;	
 	}
 }
+
 void CalibParams::drawLines(ConfigParams* configParams, cv::Mat& img, std::vector<cv::Vec4i> lines, bool laneDetection) {
 
 	int x_offset = configParams->x1_roi;
@@ -532,7 +578,7 @@ void CalibParams::drawLines(ConfigParams* configParams, cv::Mat& img, std::vecto
 					count_1 += 1;
 				}
 
-				else if (m >= -0.75  & m <= -0.62) {
+				else if (m >= -0.75 & m <= -0.62) {
 					lane_2_m += m;
 					lane_2_yc += yc;
 					roi_lane2_pt1.x += a.x;

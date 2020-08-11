@@ -22,6 +22,7 @@ public:
     // Check that an object detector can be initialised successfully
     static bool check_ObjectDetectorInitialisation();
 
+    static bool detectAndDrawLines();
 };
 
 #endif 

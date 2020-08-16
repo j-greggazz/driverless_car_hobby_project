@@ -51,14 +51,14 @@ public:
 	void drawLines(cv::Mat& img, bool detectLanes = true, bool keepOnlyCertainAngles = false);
 
 	// Getters - Setters
-	void setLines(std::vector<cv::Vec4i> lines_);
-	void setParams(preprocessParams pParams, houghParams hParams, cv::Rect roi_Bbox);
+	void setLines(const std::vector<cv::Vec4i>& lines_);
+	void setParams(const preprocessParams& pParams, const houghParams& hParams, const cv::Rect& roi_Bbox);
 
 	// Implement virtual function of base class
 	void detectObject();
 
 	// Cuda Methods
-	cv::Mat getfinishedImg();
+	cv::Mat getfinishedImg() const;
 
 	
 private:
@@ -66,7 +66,7 @@ private:
 	preprocessParams m_preprocessVar;
 	preprocessImgs m_preprocessImg;
 	houghParams m_houghVar;
-	int id;
+	
 
 #if HAS_CUDA
 	cv::Ptr<cv::cuda::HoughSegmentDetector> m_HoughDetector;

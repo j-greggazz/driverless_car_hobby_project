@@ -44,10 +44,11 @@ public:
 		cv::Mat roiImg_car;
 #endif
 		// Lane Roi Properties
-		int x1_roi = 400;  //390
-		int y1_roi = 854;  //622
-		int recWidth = 850;  //1400
-		int recHeight = 96;  //405
+		int recWidth = 1018;  //1400
+		int recHeight = 233;
+		int x1_roi = 378;  //390
+		int y1_roi = 847;  //622
+
 		cv::Rect roi_Bbox = cv::Rect(x1_roi, y1_roi, recWidth, recHeight);
 		cv::Mat roiImg;
 
@@ -142,12 +143,12 @@ public:
 	void houghLParametersP();
 	static void houghLPCallback(int, void *userdata);
 
-	static void displayImg(cv::Mat Img, const std::string title, int screenWidth, int screenHeight, int imgNum);
-	static void drawLines(ConfigParams* configParams, cv::Mat& Img, std::vector<cv::Vec4i> lines, bool laneDetection = false);
+	static void displayImg(const cv::Mat& Img, const std::string& title, const int& screenWidth, const int& screenHeight, const int& imgNum);
+	static void drawLines(ConfigParams* configParams, cv::Mat& Img, const std::vector<cv::Vec4i>& lines, bool laneDetection = false);
 	void updateParams();
 
-	preprocessParams getPreprocessParams();
-	houghParams getHoughParams();
+	preprocessParams getPreprocessParams() const;
+	houghParams getHoughParams() const;
 
 //private:
 	// member variables

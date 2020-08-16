@@ -10,9 +10,9 @@ class ContourDetector : public LineDetector {
 public:
 	void detectObject();
 	
-	cv::Mat getShowImg();
+	cv::Mat getShowImg() const;
 
-	void setParams(preprocessParams pParams, houghParams hParams, cv::Rect roi_Bbox);
+	void setParams(const preprocessParams& pParams, const houghParams& hParams, const cv::Rect& roi_Bbox);
 
 
 

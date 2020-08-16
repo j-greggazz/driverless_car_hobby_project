@@ -17,16 +17,19 @@
 class CarTracker {
 
 public:
-	void declareTracker(std::string trackerType);
-	void initTracker(cv::Mat frame, cv::Rect2d trackbox);
-	cv::Ptr<cv::Tracker> getTracker();
-	void setTracker(cv::Ptr<cv::Tracker> tracker_);
-	bool updateTracker(cv::Mat& frame, cv::Rect2d& trackBox);
+	void declareTracker(const std::string& trackerType);
+	void initTracker(const cv::Mat& frame, const cv::Rect2d& trackbox);
+	bool updateTracker(const cv::Mat& frame, cv::Rect2d& trackBox);
+
+	void setTracker(const cv::Ptr<cv::Tracker>& tracker_);
 	void setId(int iD);
-	void setCurrImg(cv::Mat& curr_Img);
-	cv::Mat getCurrImg();
-	std::vector<cv::Ptr<cv::Tracker>> getTrackersVec();
-	void setTrackersVec(std::vector<cv::Ptr<cv::Tracker>> newTrackersVec);
+	void setCurrImg(const cv::Mat& curr_Img);
+	void setTrackersVec(const std::vector<cv::Ptr<cv::Tracker>>& newTrackersVec);
+
+	cv::Mat getCurrImg() const;
+	cv::Ptr<cv::Tracker> getTracker() const;
+	std::vector<cv::Ptr<cv::Tracker>> getTrackersVec() const;
+
 
 private:
 

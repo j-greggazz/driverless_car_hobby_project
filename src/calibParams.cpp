@@ -356,8 +356,8 @@ void CalibParams::setup(CalibParams& cb_, cv::Mat& img)
 
 	cb_.m_configParams.newCols = new_cols;
 	cb_.m_configParams.newRows = new_rows;
-	cb_.m_configParams.recHeight = new_rows;
-	cb_.m_configParams.recWidth = new_cols;
+	//cb_.m_configParams.recHeight = new_rows;
+	//cb_.m_configParams.recWidth = new_cols;
 
 	cv::Mat m;
 	const std::string winName = "Background";
@@ -466,7 +466,7 @@ void CalibParams::roiCarCallback(int, void* userdata) {
 };
 
 /* -------------------- Helper functions --------------------*/
-void CalibParams::displayImg(Mat img, const std::string title, int screenWidth, int screenHeight, int img_num) {
+void CalibParams::displayImg(const Mat& img, const std::string& title, const int& screenWidth, const int& screenHeight, const int& img_num) {
 
 	//double img_width = img.cols;  //obtain size of image and halve it in order to fit 
 	//double img_height = img.rows;
@@ -544,7 +544,7 @@ void CalibParams::displayImg(Mat img, const std::string title, int screenWidth, 
 	}
 }
 
-void CalibParams::drawLines(ConfigParams* configParams, cv::Mat& img, std::vector<cv::Vec4i> lines, bool laneDetection) {
+void CalibParams::drawLines(ConfigParams* configParams, cv::Mat& img, const std::vector<cv::Vec4i>& lines, bool laneDetection) {
 
 	int x_offset = configParams->x1_roi;
 	int y_offset = configParams->y1_roi;
@@ -678,12 +678,12 @@ void CalibParams::updateParams()
 
 }
 
-LineDetector::preprocessParams CalibParams::getPreprocessParams()
+LineDetector::preprocessParams CalibParams::getPreprocessParams() const
 {
 	return m_preprocessVar;
 }
 
-LineDetector::houghParams CalibParams::getHoughParams()
+LineDetector::houghParams CalibParams::getHoughParams() const
 {
 	return m_houghVar;
 }

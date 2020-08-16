@@ -23,20 +23,20 @@ public:
 	
 	// Constructor / Destructor
 	ObjectDetector();
-	ObjectDetector(int iD);
+	ObjectDetector(const int& iD);
 	virtual ~ObjectDetector();
 
 	// Setter Methods
-	void setId(int iD);
-	void setCurrImg(cv::Mat& curr_Img);
-	void setRoiBox(cv::Rect roi_Bbox_); // get methods to access all params and set RoiBox to these
-	void setImgProcessed(bool img_processed);
+	void setId(const int& iD);
+	void setCurrImg(const cv::Mat& curr_Img);
+	void setRoiBox(const cv::Rect& roi_Bbox_); // get methods to access all params and set RoiBox to these
+	void setImgProcessed(const bool& img_processed);
 
 	// Getter Methods
-	int getId();
-	cv::Mat getCurrImg();
-	bool getImgProcessed();
-	cv::Rect getRoiBox(); // get methods to access all params and set RoiBox to these
+	int getId() const;
+	cv::Mat getCurrImg() const;
+	bool getImgProcessed() const;
+	cv::Rect getRoiBox() const; // get methods to access all params and set RoiBox to these
 
 	// Virtual function(s)
 	virtual void detectObject() = 0;

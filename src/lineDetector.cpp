@@ -142,7 +142,7 @@ void LineDetector::detectObject()
 #endif
 }
 #if HAS_CUDA
-cv::Mat LineDetector::getfinishedImg()
+cv::Mat LineDetector::getfinishedImg() const
 {
 	return finishedImg;
 }
@@ -174,7 +174,7 @@ void LineDetector::drawLines(Mat& img, bool detectLanes, bool keepOnlyCertainAng
 			if (detectLanes) {
 				float m = float(b.y - a.y) / float(b.x - a.x);
 				float yc = b.y - m * a.y;
-				if (m >= 0.43 & m <= 0.56) {
+				if (m >= 0.39 & m <= 0.59) {
 					lane_1_m += m;
 					lane_1_yc += yc;
 					roi_lane1_pt1.x += a.x;
@@ -184,7 +184,7 @@ void LineDetector::drawLines(Mat& img, bool detectLanes, bool keepOnlyCertainAng
 					count_1 += 1;
 				}
 
-				else if (m >= -0.75 & m <= -0.62) { //(m >= -0.75 & m <= -0.62)
+				else if (m >= -0.79 & m <= -0.66) { //(m >= -0.75 & m <= -0.62)
 					lane_2_m += m;
 					lane_2_yc += yc;
 					roi_lane2_pt1.x += a.x;
@@ -278,7 +278,7 @@ void LineDetector::drawLines(Mat& img, bool detectLanes, bool keepOnlyCertainAng
 		else {
 			cv::arrowedLine(img, m_houghVar.line2_pt2, m_houghVar.line2_pt1, Scalar(0, 0, 255), m_houghVar.lineThickness, LINE_AA);
 		}
-		cout << avgMLane1 << " " << avgMLane2 << " " << m_houghVar.line1_pt1 << " " << m_houghVar.line1_pt2 << " " << m_houghVar.line2_pt1 << " " << m_houghVar.line2_pt2 << endl;
+		//cout << avgMLane1 << " " << avgMLane2 << " " << m_houghVar.line1_pt1 << " " << m_houghVar.line1_pt2 << " " << m_houghVar.line2_pt1 << " " << m_houghVar.line2_pt2 << endl;
 	}
 
 
@@ -287,7 +287,7 @@ void LineDetector::drawLines(Mat& img, bool detectLanes, bool keepOnlyCertainAng
 
 // Setters & Getters
 
-void LineDetector::setLines(std::vector<cv::Vec4i> lines_)
+void LineDetector::setLines(const std::vector<cv::Vec4i>& lines_)
 {
 	m_houghVar.lines = lines_;
 }
@@ -306,7 +306,7 @@ LineDetector::houghParams LineDetector::getHoughParams()
 
 // Parameter initialisation
 
-void LineDetector::setParams(preprocessParams pParams, houghParams hParams, cv::Rect roi_Bbox)
+void LineDetector::setParams(const preprocessParams& pParams, const houghParams& hParams, const cv::Rect& roi_Bbox)
 {
 	m_houghVar = hParams;
 	m_preprocessVar = pParams;

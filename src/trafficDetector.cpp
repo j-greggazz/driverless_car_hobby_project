@@ -6,22 +6,21 @@ using namespace std;
 // Implement virtual function (however not really implemented :/)
 void TrafficDetector::detectObject() {
 
-// C++ Cuda not able to do object tracking yet;
+// C++ Cuda not able to do object tracking yet; See -> https://github.com/opencv/opencv/issues/16433 ("GpuMat as input/output to cv::dnn::Net")
 #if HAS_CUDA
 	cv::Mat frame = getCurrImg()(getRoiBox()).clone();
 	Rect2d trackBox;
 	Mat resizedImg;
 	cv::resize(frame, resizedImg, Size(300, 300));
 	
-	
 	Mat inputBlob = dnn::blobFromImage(resizedImg, 0.007843, Size(300, 300), Scalar(127.5, 127.5, 127.5), false);
 	//cv::cuda::GpuMat gpuBlob, mask;
 	//gpuBlob.upload(inputBlob);
 	int id = getId();
 	cv::Mat detection; 
-
-	dnnNet.setInput(inputBlob, "data");
-	detection = dnnNet.forward("detection_out");
+	//m_dnnNet.setInput(gpuBlob, "data");
+	m_dnnNet.setInput(inputBlob, "data");
+	detection = m_dnnNet.forward("detection_out");
 	Mat detectionMat(detection.size[2], detection.size[3], CV_32F, detection.ptr<float>());
 	ostringstream ss;
 	float confidenceThreshold = .20;
@@ -32,7 +31,7 @@ void TrafficDetector::detectObject() {
 		if (confidence > confidenceThreshold) {
 			int idx = static_cast<int>(detectionMat.at<float>(i, 1));
 
-			if (CLASSES[idx] == "car" | CLASSES[idx] == "bus" ) {
+			if (m_CLASSES[idx] == "car" | m_CLASSES[idx] == "bus" ) {
 				int xLeftBottom = static_cast<int>(detectionMat.at<float>(i, 3) * frame.cols);
 				int yLeftBottom = static_cast<int>(detectionMat.at<float>(i, 4) * frame.rows);
 				int xRightTop = static_cast<int>(detectionMat.at<float>(i, 5) * frame.cols);
@@ -69,7 +68,7 @@ void TrafficDetector::detectObject() {
 					ss.str("");
 					ss << confidence;
 					String conf(ss.str());
-					String label = CLASSES[idx] + ": " + conf;
+					String label = m_CLASSES[idx] + ": " + conf;
 					setTrackerLabel(label);
 
 					return;
@@ -80,14 +79,14 @@ void TrafficDetector::detectObject() {
 #endif
 }
 
-void TrafficDetector::setModelTxt(std::string modelText_)
+void TrafficDetector::setModelTxt(const std::string& modelText_)
 {
-	modelTxt = modelText_;
+	m_modelTxt = modelText_;
 }
 
-void TrafficDetector::setModelBin(std::string binText_)
+void TrafficDetector::setModelBin(const std::string& binText_)
 {
-	modelBin = binText_;
+	m_modelBin = binText_;
 }
 
 
@@ -101,9 +100,9 @@ void TrafficDetector::detectObject(std::vector<cv::Rect2d>& trackBoxVec, std::mu
 	Mat inputBlob = dnn::blobFromImage(resizedImg, 0.007843, Size(300, 300), Scalar(127.5, 127.5, 127.5), false);
 
 	int id = getId();
-	cout << dnnNet.empty() << endl; 
-	dnnNet.setInput(inputBlob, "data");
-	Mat detection = dnnNet.forward("detection_out");
+	//cout << m_dnnNet.empty() << endl;
+	m_dnnNet.setInput(inputBlob, "data");
+	Mat detection = m_dnnNet.forward("detection_out");
 	Mat detectionMat(detection.size[2], detection.size[3], CV_32F, detection.ptr<float>());
 	ostringstream ss;
 	float confidenceThreshold = .20;
@@ -113,7 +112,7 @@ void TrafficDetector::detectObject(std::vector<cv::Rect2d>& trackBoxVec, std::mu
 		if (confidence > confidenceThreshold) {
 			int idx = static_cast<int>(detectionMat.at<float>(i, 1));
 
-			if (CLASSES[idx] == "car" | CLASSES[idx] == "bus" | CLASSES[idx] == "bicycle" | CLASSES[idx] == "person") {
+			if (m_CLASSES[idx] == "car" | m_CLASSES[idx] == "bus" | m_CLASSES[idx] == "bicycle" | m_CLASSES[idx] == "person") {
 				int xLeftBottom = static_cast<int>(detectionMat.at<float>(i, 3) * frame.cols);
 				int yLeftBottom = static_cast<int>(detectionMat.at<float>(i, 4) * frame.rows);
 				int xRightTop = static_cast<int>(detectionMat.at<float>(i, 5) * frame.cols);
@@ -152,16 +151,16 @@ void TrafficDetector::detectObject(std::vector<cv::Rect2d>& trackBoxVec, std::mu
 						// Writing
 						const std::lock_guard<mutex> lock(mt_trackbox);
 						trackBoxVec[id] = trackBox;
-						td_trackbox = trackBox;
+						m_trackbox = trackBox;
 						cout << "Tracker instantiated!!: " << confidence << endl;
 
 						ss.str("");
 						ss << confidence;
 						String conf(ss.str());
-						String label = CLASSES[idx] + ": " + conf;
+						String label = m_CLASSES[idx] + ": " + conf;
 						setTrackerLabel(label);
 					}
-					trackingStatus = 1;
+					m_trackingStatus = 1;
 					return;
 				}
 			}
@@ -171,55 +170,55 @@ void TrafficDetector::detectObject(std::vector<cv::Rect2d>& trackBoxVec, std::mu
 
 // Getters & Setters:
 
-string TrafficDetector::getModelTxt()
+string TrafficDetector::getModelTxt() const
 {
-	return modelTxt;
+	return m_modelTxt;
 }
 
-string TrafficDetector::getModel()
+string TrafficDetector::getModel() const
 {
-	return modelBin;
+	return m_modelBin;
 }
 
-int TrafficDetector::getTrackStatus()
+int TrafficDetector::getTrackStatus() const
 {
-	return trackingStatus;
+	return m_trackingStatus;
 }
 
-cv::Rect2d TrafficDetector::getTrackbox()
+cv::Rect2d TrafficDetector::getTrackbox() const
 {
-	return td_trackbox;
+	return m_trackbox;
 }
 
-void TrafficDetector::setTrackerLabel(std::string trackerLabel)
+void TrafficDetector::setTrackerLabel(const std::string& trackerLabel)
 {
-	tracker_label = trackerLabel;
+	m_trackerLabel = trackerLabel;
 }
 
-std::string TrafficDetector::getTrackerLabel()
+std::string TrafficDetector::getTrackerLabel() const
 {
-	return tracker_label;
+	return m_trackerLabel;
 }
 
-std::vector<cv::Rect2d> TrafficDetector::getTrackBoxVec()
+std::vector<cv::Rect2d> TrafficDetector::getTrackBoxVec() const
 {
 	return m_trackBoxVec;
 }
 
-std::string* TrafficDetector::getClasses()
+std::string* TrafficDetector::getClasses() 
 {
-	return CLASSES;
+	return m_CLASSES;
 }
 
-void TrafficDetector::setDnnNet(cv::dnn::Net net)
+void TrafficDetector::setDnnNet(const cv::dnn::Net& net)
 {
-	cout << net.empty() << endl;
-	dnnNet = net;
+	//cout << net.empty() << endl;
+	m_dnnNet = net;
 }
 
-cv::dnn::Net TrafficDetector::getDnnNet()
+cv::dnn::Net TrafficDetector::getDnnNet() const
 {
-	return dnnNet;
+	return m_dnnNet;
 }
 
 

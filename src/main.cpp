@@ -13,9 +13,9 @@ using namespace cv;
 using namespace std;
 
 // Ctrl+k Ctrl+D align code
-void runThreadsOnHeap(string video_path);
-void runThreadsOnStack(string video_path);
-void runStaticMethodThreads(string video_path, std::string cur_dir);
+void runThreadsOnHeap(const string& video_path);
+void runThreadsOnStack(const string& video_path);
+void runStaticMethodThreads(const string& video_path, const std::string& cur_dir);
 void singleThreadContourTest();
 void testGPUFunctions();
 

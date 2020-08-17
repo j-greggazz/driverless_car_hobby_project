@@ -85,8 +85,9 @@ std::thread DashboardTracker::dashboardThread(std::vector<bool>& imgAvailable, s
 	return std::thread(&DashboardTracker::runThread, this, std::ref(imgAvailable), std::ref(stopThreads), std::ref(trackBoxVec), std::ref(trackingStatus), std::ref(lines), std::ref(imgAvailableGuard), std::ref(trackingStatusGuard), std::ref(mt_trackbox), std::ref(lines_reserve));
 }
 
-
-void DashboardTracker::runThread(std::vector<bool>& imgAvail, std::atomic<bool>& stopThreads, std::vector<cv::Rect2d>& trackBoxVec, std::vector<int>& trackingStatus, std::vector<std::vector<cv::Vec4i>>& lines, std::mutex & imgAvailableGuard, std::mutex & trackingStatusGuard, std::mutex & mt_trackbox, std::mutex & lines_reserve)
+// old runThread method (had worked with old runThreadsOnHeap method)
+#if 0
+void DashboardTracker::runThread__(std::vector<bool>& imgAvail, std::atomic<bool>& stopThreads, std::vector<cv::Rect2d>& trackBoxVec, std::vector<int>& trackingStatus, std::vector<std::vector<cv::Vec4i>>& lines, std::mutex & imgAvailableGuard, std::mutex & trackingStatusGuard, std::mutex & mt_trackbox, std::mutex & lines_reserve)
 {
 	// Reusable variables
 	int trackStatus;
@@ -251,7 +252,142 @@ void DashboardTracker::runThread(std::vector<bool>& imgAvail, std::atomic<bool>&
 	}
 	this_thread::sleep_for(chrono::milliseconds(10));
 }
+#endif
+void DashboardTracker::runThread(std::vector<bool>& imgAvail, std::atomic<bool>& stopThreads, std::vector<cv::Rect2d>& trackBoxVec, std::vector<int>& trackingStatus, std::vector<std::vector<cv::Vec4i>>& lines, std::mutex& imgAvailableGuard, std::mutex& trackingStatusGuard, std::mutex& mt_trackbox, std::mutex& lines_reserve)
+{
+	// Reusable variables
+	m_td.setId(this->m_id);
+	m_ld.setId(this->m_id);
+	m_ct.setId(this->m_id);
+	int trackStatus;
+	Rect2d trackBox;
+	Rect2d trackBox_empty;
+	bool updateSuccess;
+	bool imgAvailable;
+	Rect2d roi_tracker_box = m_td.getRoiBox();
+	std::string CLASSES[21] = { "background", "aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable",
+									"dog", "horse", "motorbike", "person", "pottedplant", "sheep","sofa", "train", "tvmonitor" };
+	int countsSinceLastSearch = 20;
+	int failureCounter = 0;
 
+
+	while (true) {
+
+		if (stopThreads) {
+			break;
+			return;
+		}
+		imgAvailable = false;
+
+		// Reading
+		imgAvailable = imgAvail[m_id];
+
+		if (imgAvailable) {
+			Mat img;
+
+			{   // Writing
+				const std::lock_guard<mutex> lock(imgAvailableGuard);
+				m_imgProcessed = false;
+				imgAvail[m_id] = false;
+				img = m_currImg.clone();
+			}
+
+			// Step 1: Lane Detection
+			auto start = std::chrono::high_resolution_clock::now();
+			m_ld.detectObject();
+
+			{	// Writing
+				const std::lock_guard<mutex> lock(lines_reserve);
+				lines[m_id] = m_ld.getHoughParams().lines;
+				trackStatus = trackingStatus[m_id];
+				//auto finish = std::chrono::high_resolution_clock::now();
+				//std::chrono::duration<double> elapsed = finish - start;
+				//std::cout << "Line detection took : " << elapsed.count() << " s\n";
+			}
+
+			// Optional Step 2: If no tracker instantiated, keep detecting
+
+			if (trackStatus == 0 & countsSinceLastSearch >= 20)
+			{
+				countsSinceLastSearch = 0;
+				// Reading
+				m_td.setTrackStatus(0);
+				m_td.detectObject(trackBoxVec, mt_trackbox); // OR when Cuda works with dnn::Net -----> td_.detectObject()							 
+				trackStatus = m_td.getTrackStatus();
+
+
+				if (trackStatus == 1) {
+
+					// Reading
+					trackBox = m_td.getTrackbox();
+					countsSinceLastSearch = 20;
+					m_ct.declareTracker(m_ct.getTrackerType());
+					m_ct.initTracker(img(roi_tracker_box), trackBox);
+					{
+						// Writing
+						const std::lock_guard<mutex> lock(trackingStatusGuard);
+						trackingStatus[m_id] = 1;
+					}
+				}
+			}
+
+			else if ((trackStatus == 1) | (trackStatus == 2)) { // DO NOT LET IT SET A NEW TRACKER!! IT UPDATES ON A DIFFERENT AREA AFTER TRACKER LOST??
+
+			
+				{
+					// Writing
+					const std::lock_guard<mutex> lock(mt_trackbox);
+					updateSuccess = m_ct.updateTracker(img(roi_tracker_box), trackBoxVec[m_id]);
+					if (!updateSuccess) {
+						cout << "Tracker Update Fail!" << endl;
+					}
+				}
+
+
+				if (updateSuccess)
+				{
+					failureCounter = 0;
+					if (trackStatus == 2) {
+						{
+							// Writing
+							const std::lock_guard<mutex> lock(trackingStatusGuard);
+							trackingStatus[m_id] = 1;
+						}
+						trackStatus = 1;
+					}
+				}
+
+				else {
+					failureCounter++;
+					if (failureCounter > 5) {
+						//putText(frame, "Tracking abandoned: too many frames without successful tracking", Point(100, 80), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(0, 0, 255), 2);
+						{
+							const std::lock_guard<mutex> lock(mt_trackbox);
+							trackStatus = 0;
+							trackingStatus[m_id] = trackStatus;
+							trackBoxVec[m_id] = trackBox_empty;
+						}
+					}
+
+					else {
+						{
+							const std::lock_guard<mutex> lock(trackingStatusGuard);
+							trackingStatus[m_id] = 2;
+							trackStatus == 2;
+						}
+					}
+				}
+			}
+
+			else {
+				countsSinceLastSearch++;
+				trackStatus == 0;
+			}
+			m_imgProcessed = true;
+		}
+		this_thread::sleep_for(chrono::milliseconds(10));
+	}
+}
 
 void DashboardTracker::staticMethodThread(DashboardTracker& dt, vector<bool>& imgAvail, atomic<bool>& stopThreads, vector<Rect2d>& trackBoxVec, vector<int> &trackingStatus, vector<vector<Vec4i>>& lines, mutex& imgAvailableGuard, mutex& trackingStatusGuard, mutex& mt_trackbox, mutex& lines_reserve) {
 
@@ -313,7 +449,6 @@ void DashboardTracker::staticMethodThread(DashboardTracker& dt, vector<bool>& im
 			if (trackStatus == 0 & countsSinceLastSearch >= 20)
 			{	
 				countsSinceLastSearch = 0;
-
 				// Reading
 				td_ = dt.getTd();
 				td_.setTrackStatus(0);

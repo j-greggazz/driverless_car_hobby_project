@@ -4,6 +4,7 @@
 
 #include <LineDetector.h>
 #include <CarTracker.h>
+#include "wtypes.h"
 
 class CalibParams : public LineDetector, CarTracker {
 
@@ -20,8 +21,8 @@ public:
 		const std::string houghWindowName = "5. Hough-Line Operations";
 		const std::string houghCWindowName = "6. Hough-Circle Operations";
 		const std::string roiBoxWindowName_car = "7. Set Roi-Box";
-		const int screenHeight = 1080; // 768;//1080;
-		const int screenWidth = 1920; //1366;//1920;
+		int screenHeight;// = 1080; // 768;//1080;
+		int screenWidth;// = 1920; //1366;//1920;
 		float newCols;
 		float newRows;
 
@@ -43,10 +44,11 @@ public:
 		cv::Mat roiImg_car;
 #endif
 		// Lane Roi Properties
-		int x1_roi = 400;  //390
-		int y1_roi = 854;  //622
-		int recWidth = 850;  //1400
-		int recHeight = 96;  //405
+		int recWidth = 1018;  //1400
+		int recHeight = 233;
+		int x1_roi = 378;  //390
+		int y1_roi = 847;  //622
+
 		cv::Rect roi_Bbox = cv::Rect(x1_roi, y1_roi, recWidth, recHeight);
 		cv::Mat roiImg;
 
@@ -114,6 +116,7 @@ public:
 
 	/* -------------------- Preprocessing --------------------*/
 	//  -- Setup --
+	void getDesktopResolution();
 	static void setup(CalibParams& cb,  cv::Mat& img);
 
 	//  -- ROI Setting
@@ -140,12 +143,12 @@ public:
 	void houghLParametersP();
 	static void houghLPCallback(int, void *userdata);
 
-	static void displayImg(cv::Mat Img, const std::string title, int screenWidth, int screenHeight, int imgNum);
-	static void drawLines(ConfigParams* configParams, cv::Mat& Img, std::vector<cv::Vec4i> lines, bool laneDetection = false);
+	static void displayImg(const cv::Mat& Img, const std::string& title, const int& screenWidth, const int& screenHeight, const int& imgNum);
+	static void drawLines(ConfigParams* configParams, cv::Mat& Img, const std::vector<cv::Vec4i>& lines, bool laneDetection = false);
 	void updateParams();
 
-	preprocessParams getPreprocessParams();
-	houghParams getHoughParams();
+	preprocessParams getPreprocessParams() const;
+	houghParams getHoughParams() const;
 
 //private:
 	// member variables

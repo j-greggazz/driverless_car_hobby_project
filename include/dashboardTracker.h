@@ -21,23 +21,23 @@
 class DashboardTracker {
 
 public:
-	DashboardTracker(int iD, LineDetector& lD, TrafficDetector& tD, CarTracker& cT);
+	DashboardTracker(const int& iD, const LineDetector& lD, const TrafficDetector& tD, const CarTracker& cT);
 	DashboardTracker();
 	~DashboardTracker();
 
-	void setId(int iD);
-	void setLd(LineDetector lD);
-	void setCt(CarTracker cT);
-	void setTd(TrafficDetector tD);
-	void setCurrImg(cv::Mat curr_Img);
-	void setImgProcessed(bool status);
+	void setId(const int& iD);
+	void setLd(const LineDetector& lD);
+	void setCt(const CarTracker& cT);
+	void setTd(const TrafficDetector& tD);
+	void setCurrImg(const cv::Mat& curr_Img);
+	void setImgProcessed(const bool& status);
 
-	int getId();
-	cv::Mat getCurrImg();
-	LineDetector getLd();
-	TrafficDetector getTd();
-	CarTracker getCt();
-	bool getImgProcessed();
+	int getId() const;
+	cv::Mat getCurrImg() const;
+	LineDetector getLd() const;
+	TrafficDetector getTd() const;
+	CarTracker getCt() const;
+	bool getImgProcessed() const;
 	
 	// Threading Methods
 	// 1. Object Method

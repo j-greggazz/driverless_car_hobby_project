@@ -98,15 +98,16 @@ void ContourDetector::detectObject() {
 
 }
 
-cv::Mat ContourDetector::getShowImg()
+cv::Mat ContourDetector::getShowImg() const
 {
 	return m_showImg;
 }
 
-void ContourDetector::setParams(preprocessParams pParams, houghParams hParams, cv::Rect roi_Bbox)
+void ContourDetector::setParams(const preprocessParams& pParams, const houghParams& hParams, const cv::Rect& roi_Bbox)
 {
 	m_houghVar = hParams;
 	m_preprocessVar = pParams;
 	ObjectDetector::setRoiBox(roi_Bbox);
 }
+
 

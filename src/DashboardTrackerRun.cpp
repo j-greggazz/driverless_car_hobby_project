@@ -21,7 +21,7 @@ using namespace std::this_thread; // sleep_for, sleep_until
 using namespace std::chrono;
 
 
-int initialiseVideo(VideoCapture& vCap, string path, int startFrame);
+int initialiseVideo(VideoCapture& vCap, const string& path, const int& startFrame);
 #if HAS_CUDA
 void testGPUFunctions() {
 
@@ -199,7 +199,7 @@ void singleThreadContourTest() {
 	}
 }
 
-void runThreadsOnHeap(string video_path) {
+void runThreadsOnHeap(const string& video_path) {
 	// 1. Setup video-capture
 	VideoCapture vCap;
 	//string path_ = "../data/dashboardVid.mp4";
@@ -456,7 +456,7 @@ void runThreadsOnHeap(string video_path) {
 	return;
 }
 
-void runThreadsOnStack(string video_path) {
+void runThreadsOnStack(const string& video_path) {
 
 	// 1. Setup video-capture
 	VideoCapture vCap;
@@ -706,7 +706,7 @@ void runThreadsOnStack(string video_path) {
 
 }
 
-void runStaticMethodThreads(string video_path, string cur_dir) {
+void runStaticMethodThreads(const string& video_path, const string& cur_dir) {
 
 	// 0. Determine working directory for reference to loaded models, data
 	int pos = cur_dir.find_last_of("/\\");
@@ -721,7 +721,7 @@ void runStaticMethodThreads(string video_path, string cur_dir) {
 	// 1. Setup video-capture
 	VideoCapture vCap;
 	string path_ = "../data/dashboardVid.mp4";
-	int startFrame = 250;// 10750;
+	int startFrame = 11250;// 10750;
 	bool success = initialiseVideo(vCap, video_path, startFrame);
 
 	if (success) {
@@ -793,7 +793,11 @@ void runStaticMethodThreads(string video_path, string cur_dir) {
 			}
 
 			try {
-				td.setDnnNet(dnn::readNetFromCaffe(td.getModelTxt(), td.getModel()));
+				dnn::Net net = dnn::readNetFromCaffe(td.getModelTxt(), td.getModel());
+				net.setPreferableBackend(DNN_BACKEND_CUDA);
+				net.setPreferableTarget(DNN_TARGET_CUDA);
+				td.setDnnNet(net);
+				
 				//dnn::Net net = cv::dnn::readNetFromTensorflow("../models/frozen_inference_graph.pb", "../models/labelmap.pbtxt");
 				//bool empty = net.empty();
 				//dnn::Net net = net = dnn::readNetFromCaffe(td.getModelTxt(), td.getModel());
@@ -809,6 +813,7 @@ void runStaticMethodThreads(string video_path, string cur_dir) {
 
 			// 7.4. Declare traffic-tracker object
 			CarTracker ct;
+			ct.setTrackerType(trackerType);
 			ct.declareTracker(trackerType);
 
 			// 7.5. Declare autonomous driving object as sum of all above objects
@@ -909,10 +914,10 @@ void runStaticMethodThreads(string video_path, string cur_dir) {
 			cv::resize(curr_img, temp, cv::Size(), 0.75, 0.75);
 			imshow("Frame_i", temp);
 
-			{
-				const std::lock_guard<mutex> lock(imgAvailGuard);
-				cout << "frame " << i << endl;
-			}
+			//{
+			//	const std::lock_guard<mutex> lock(imgAvailGuard);
+			//	cout << "frame " << i << endl;
+			//}
 			processedFrames++;
 			i++;
 			quit = waitKey(100);
@@ -931,7 +936,7 @@ void runStaticMethodThreads(string video_path, string cur_dir) {
 
 }
 
-int initialiseVideo(VideoCapture& vCap, string path, int startFrame) {
+int initialiseVideo(VideoCapture& vCap, const string& path, const int& startFrame) {
 
 	vCap.open(path);
 
@@ -951,7 +956,7 @@ int initialiseVideo(VideoCapture& vCap, string path, int startFrame) {
 	return success;
 }
 
-void runThreadsOnStack_GPU(string video_path) {
+void runThreadsOnStack_GPU(const string& video_path) {
 
 	// 1. Setup video-capture
 	VideoCapture vCap;

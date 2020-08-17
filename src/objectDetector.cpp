@@ -8,7 +8,7 @@ ObjectDetector::ObjectDetector()
 {
 }
 
-ObjectDetector::ObjectDetector(int iD) {
+ObjectDetector::ObjectDetector(const int& iD) {
 	m_id = iD;
 }
 
@@ -18,38 +18,41 @@ ObjectDetector:: ~ObjectDetector() {};
 // Public Methods - getters & setters
 
 // - Getters
-int ObjectDetector::getId() {
+int ObjectDetector::getId() const
+{
 	return m_id;
 }
-cv::Mat ObjectDetector::getCurrImg()
+cv::Mat ObjectDetector::getCurrImg() const
 {
 	return m_currImg;
 }
 
 
-cv::Rect ObjectDetector::getRoiBox() {
+cv::Rect ObjectDetector::getRoiBox() const
+{
 	return m_roi_Bbox;
 }
 
-bool ObjectDetector::getImgProcessed() {
+bool ObjectDetector::getImgProcessed()  const 
+{
 	return m_imgProcessed;
 }
 
 // - Setters
-void ObjectDetector::setId(int iD) {
+void ObjectDetector::setId(const int& iD) {
 	m_id = iD;
 }
 
-void ObjectDetector::setCurrImg(cv::Mat& curr_Img) {
-	m_currImg = curr_Img.clone();
+void ObjectDetector::setCurrImg(const cv::Mat& curr_Img) {
+	m_currImg = curr_Img;
 }
 
 
-void ObjectDetector::setRoiBox(cv::Rect roi_Bbox_) {
+void ObjectDetector::setRoiBox(const cv::Rect& roi_Bbox_) {
 	m_roi_Bbox = roi_Bbox_;
 }
 
-void ObjectDetector::setImgProcessed(bool img_processed) {
+void ObjectDetector::setImgProcessed(const bool& img_processed) {
 	m_imgProcessed = img_processed;
 }
 

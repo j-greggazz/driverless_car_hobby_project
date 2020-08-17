@@ -4,7 +4,7 @@
 using namespace cv;
 using namespace std;
 
-void CarTracker::declareTracker(string trackerType)
+void CarTracker::declareTracker(const string& trackerType)
 {
 	if (trackerType == "BOOSTING")
 		m_tracker = TrackerBoosting::create();
@@ -24,50 +24,60 @@ void CarTracker::declareTracker(string trackerType)
 		m_tracker = TrackerCSRT::create();
 }
 
-void CarTracker::initTracker(cv::Mat frame, cv::Rect2d trackBox)
+void CarTracker::initTracker(const cv::Mat& frame, const cv::Rect2d& trackBox)
 {
 	m_tracker->init(frame, trackBox);
 	m_trackerExists = true;
 }
 
-bool CarTracker::updateTracker(cv::Mat& frame, cv::Rect2d& trackBox)
+bool CarTracker::updateTracker(const cv::Mat& frame, cv::Rect2d& trackBox)
 {
 	return m_tracker->update(frame, trackBox);
 }
 
-void CarTracker::setId(int iD)
+void CarTracker::setId(const int& iD)
 {
 	m_id = iD;
 }
 
-void CarTracker::setCurrImg(cv::Mat & curr_Img)
+void CarTracker::setCurrImg(const cv::Mat& curr_Img)
 {
-	m_currImg = curr_Img.clone();
+	m_currImg = curr_Img;
 }
 
-cv::Mat CarTracker::getCurrImg()
+cv::Mat CarTracker::getCurrImg() const
 {
 	return m_currImg;
 }
 
-std::vector<cv::Ptr<cv::Tracker>> CarTracker::getTrackersVec()
+std::string CarTracker::getTrackerType() const
+{
+	return m_trackerType;
+}
+
+std::vector<cv::Ptr<cv::Tracker>> CarTracker::getTrackersVec() const
 {
 	return m_trackersVec;
 }
 
-void CarTracker::setTrackersVec(std::vector<cv::Ptr<cv::Tracker>> newTrackersVec)
+void CarTracker::setTrackersVec(const std::vector<cv::Ptr<cv::Tracker>>& newTrackersVec)
 {
 	m_trackersVec = newTrackersVec;
 }
 
-cv::Ptr<cv::Tracker> CarTracker::getTracker()
+cv::Ptr<cv::Tracker> CarTracker::getTracker() const
 {
 	return m_tracker;
 }
 
-void CarTracker::setTracker(cv::Ptr<cv::Tracker> tracker_)
+void CarTracker::setTracker(const cv::Ptr<cv::Tracker>& tracker_)
 {
 	m_tracker = tracker_;
+}
+
+void CarTracker::setTrackerType(const std::string& tracker_type)
+{
+	m_trackerType = tracker_type;
 }
 
 

@@ -316,6 +316,7 @@ void DashboardTracker::staticMethodThread(DashboardTracker& dt, vector<bool>& im
 
 				// Reading
 				td_ = dt.getTd();
+				td_.setTrackStatus(0);
 				td_.detectObject(trackBoxVec, mt_trackbox); // OR when Cuda works with dnn::Net -----> td_.detectObject()
 				trackStatus = td_.getTrackStatus();
 				{
@@ -330,7 +331,7 @@ void DashboardTracker::staticMethodThread(DashboardTracker& dt, vector<bool>& im
 					ct_ = dt.getCt();
 					trackBox = td_.getTrackbox();
 					countsSinceLastSearch = 20;
-					ct_.declareTracker("KCF");
+					ct_.declareTracker(ct_.getTrackerType());
 					ct_.initTracker(img(roi_tracker_box), trackBox);
 					{
 						// Writing
@@ -394,6 +395,7 @@ void DashboardTracker::staticMethodThread(DashboardTracker& dt, vector<bool>& im
 
 			else {
 				countsSinceLastSearch++;
+				trackStatus == 0;
 			}
 			dt.setImgProcessed(true);
 		}

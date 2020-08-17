@@ -185,6 +185,11 @@ int TrafficDetector::getTrackStatus() const
 	return m_trackingStatus;
 }
 
+void TrafficDetector::setTrackStatus(const int& track_status) 
+{
+	m_trackingStatus = track_status;
+}
+
 cv::Rect2d TrafficDetector::getTrackbox() const
 {
 	return m_trackbox;

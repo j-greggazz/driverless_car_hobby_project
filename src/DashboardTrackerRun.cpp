@@ -813,6 +813,7 @@ void runStaticMethodThreads(const string& video_path, const string& cur_dir) {
 
 			// 7.4. Declare traffic-tracker object
 			CarTracker ct;
+			ct.setTrackerType(trackerType);
 			ct.declareTracker(trackerType);
 
 			// 7.5. Declare autonomous driving object as sum of all above objects

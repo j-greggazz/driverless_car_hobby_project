@@ -35,7 +35,7 @@ bool CarTracker::updateTracker(const cv::Mat& frame, cv::Rect2d& trackBox)
 	return m_tracker->update(frame, trackBox);
 }
 
-void CarTracker::setId(int iD)
+void CarTracker::setId(const int& iD)
 {
 	m_id = iD;
 }
@@ -48,6 +48,11 @@ void CarTracker::setCurrImg(const cv::Mat& curr_Img)
 cv::Mat CarTracker::getCurrImg() const
 {
 	return m_currImg;
+}
+
+std::string CarTracker::getTrackerType() const
+{
+	return m_trackerType;
 }
 
 std::vector<cv::Ptr<cv::Tracker>> CarTracker::getTrackersVec() const
@@ -68,6 +73,11 @@ cv::Ptr<cv::Tracker> CarTracker::getTracker() const
 void CarTracker::setTracker(const cv::Ptr<cv::Tracker>& tracker_)
 {
 	m_tracker = tracker_;
+}
+
+void CarTracker::setTrackerType(const std::string& tracker_type)
+{
+	m_trackerType = tracker_type;
 }
 
 

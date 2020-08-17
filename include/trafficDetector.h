@@ -15,6 +15,8 @@ public:
 	void detectObject();
 	void setModelTxt(const std::string&);
 	void setModelBin(const std::string&);
+	void setTrackStatus(const int& track_status);
+
 	void detectObject(std::vector<cv::Rect2d>& trackBoxVec, std::mutex& mt_trackbox);
 	cv::dnn::Net getDnnNet() const;
 	std::string getModelTxt() const;

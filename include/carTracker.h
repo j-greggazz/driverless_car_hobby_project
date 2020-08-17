@@ -22,11 +22,13 @@ public:
 	bool updateTracker(const cv::Mat& frame, cv::Rect2d& trackBox);
 
 	void setTracker(const cv::Ptr<cv::Tracker>& tracker_);
-	void setId(int iD);
+	void setTrackerType(const std::string& tracker_type);
+	void setId(const int& iD);
 	void setCurrImg(const cv::Mat& curr_Img);
 	void setTrackersVec(const std::vector<cv::Ptr<cv::Tracker>>& newTrackersVec);
 
 	cv::Mat getCurrImg() const;
+	std::string getTrackerType() const;
 	cv::Ptr<cv::Tracker> getTracker() const;
 	std::vector<cv::Ptr<cv::Tracker>> getTrackersVec() const;
 
@@ -36,6 +38,7 @@ private:
 	cv::Ptr<cv::Tracker> m_tracker;
 	bool m_trackerExists;
 	int m_trackingStatus;
+	std::string m_trackerType;
 	int m_id;
 	cv::Mat m_currImg;
 

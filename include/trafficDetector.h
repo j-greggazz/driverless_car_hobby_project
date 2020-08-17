@@ -34,27 +34,6 @@ private:
 	//bool m_detect;
 	std::string m_CLASSES[21] = { "background", "aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable",
 									"dog", "horse", "motorbike", "person", "pottedplant", "sheep","sofa", "train", "tvmonitor" };
-<<<<<<< HEAD
-	int framesUntilDetection;
-	int failCounter;
-	int trackingStatus; // If 0 no tracker instantiated, if 1 tracker instantiated and tracking, if 2 tracker instantiated however has lost initial tracked object 
-	int countsSinceLastSearch;
-	std::string modelTxt = "../../models/MobileNetSSD_deploy.prototxt.txt";
-	std::string modelBin = "../../models/MobileNetSSD_deploy.caffemodel";
-	cv::Rect2d td_trackbox;
-	std::string tracker_label;
-	int id;
-||||||| fa2aa50
-	int framesUntilDetection;
-	int failCounter;
-	int trackingStatus; // If 0 no tracker instantiated, if 1 tracker instantiated and tracking, if 2 tracker instantiated however has lost initial tracked object 
-	int countsSinceLastSearch;
-	std::string modelTxt = "../models/MobileNetSSD_deploy.prototxt.txt";
-	std::string modelBin = "../models/MobileNetSSD_deploy.caffemodel";
-	cv::Rect2d td_trackbox;
-	std::string tracker_label;
-	int id;
-=======
 	int m_framesUntilDetection;
 	int m_failCounter;
 	int m_trackingStatus; // If 0 no tracker instantiated, if 1 tracker instantiated and tracking, if 2 tracker instantiated however has lost initial tracked object 
@@ -63,7 +42,6 @@ private:
 	std::string m_modelBin = "../../models/MobileNetSSD_deploy.caffemodel";
 	cv::Rect2d m_trackbox;
 	std::string m_trackerLabel;
->>>>>>> pc_dev
 	std::vector<cv::Rect2d> m_trackBoxVec;
 
 };

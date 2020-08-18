@@ -23,5 +23,12 @@ TEST(OPENCV_API_FUNCTION_CALLS, checkObjectDetectorInitialisation) {
 
 }
 
+TEST(OPENCV_API_FUNCTION_CALLS, detectAndDrawLines) {
+    //arrange
+    //act
+    //assert
+    ASSERT_EQ(OPENCV_API_CALLS::detectAndDrawLines(), true) << "Failed to detect lines in the image";
+
+}
 
 

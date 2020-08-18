@@ -70,7 +70,14 @@ bool OPENCV_API_CALLS::check_ObjectDetectorInitialisation()
 
 bool OPENCV_API_CALLS::detectAndDrawLines()
 {
-	Mat test_img = cv::imread("../../data/testLinesImg.png", IMREAD_COLOR);
+	Mat test_img = cv::imread("../../data/testLinesImg2.png", IMREAD_COLOR);
+	int x_offset = 400;  //390
+	int y_offset = 850;  //622
+	int recWidth = 1000;  //1400
+	int recHeight = 200;
+	cv::Rect roi_Bbox = cv::Rect(x_offset, y_offset, recWidth, recHeight);
+	test_img = test_img(roi_Bbox);
+
 
 #if HAS_CUDA
 
@@ -106,14 +113,15 @@ bool OPENCV_API_CALLS::detectAndDrawLines()
 		d_lines2.download(h_lines);
 	}
 
-	ld.setLines(m_lines);
-	ld.drawLines(test_img, false, true);
+	//ld.setLines(m_lines);
+	//ld.drawLines(test_img, false, true);
 	
 
 #endif
-	imshow("Example_test", test_img);
-	waitKey();
-	return true;
+	//imshow("Example_test", test_img);
+	//waitKey();
+
+	return (m_lines.size() > 0) ? true : false;
 }
 
 

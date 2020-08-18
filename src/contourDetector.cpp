@@ -2,7 +2,7 @@
 using namespace cv;
 using namespace std;
 
-
+// Not appropriate for task - method not implemented 
 
 void ContourDetector::detectObject() {
 

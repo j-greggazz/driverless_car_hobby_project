@@ -25,21 +25,30 @@ void CalibParams::houghCParameters() {
 void CalibParams::houghC_Callback(int, void* userdata) {
 
 	ConfigParams* configP = reinterpret_cast<ConfigParams*>(userdata);
-	Mat houghImg = configP->morphImg2.clone();
+	if ((configP->morphImg2.rows != 0) & (configP->morphImg2.cols != 0))
+	{
+		try {
+			Mat houghImg = configP->morphImg2.clone();
 
-	// 2. Determine elliptical shapes:
-	vector<Vec3f> circles;
-	Mat houghTransform = configP->origImg.clone();
-	// int minRadiusOffset = configP->minRadius + 
-	try {
-		cv::HoughCircles(houghImg, circles, HOUGH_GRADIENT, configP->dp, configP->minDistBtwCenters, configP->highThresh, configP->centreThresh, configP->minRadius, configP->maxRadius);
+			// 2. Determine elliptical shapes:
+			vector<Vec3f> circles;
+			Mat houghTransform = configP->origImg.clone();
+			// int minRadiusOffset = configP->minRadius + 
+
+			cv::HoughCircles(houghImg, circles, HOUGH_GRADIENT, configP->dp, configP->minDistBtwCenters, configP->highThresh, configP->centreThresh, configP->minRadius, configP->maxRadius);
+
+			int img_num = 5;
+			//drawLines(configP, houghTransform, lines);
+			displayImg(houghTransform, configP->houghCWindowName, configP->screenWidth, configP->screenHeight, img_num);
+		}
+
+		catch (cv::Exception) {
+			cout << "Please set roi-box first." << endl;
+		}
+
 	}
-	catch (cv::Exception) {
+	else {
 		cout << "Please set roi-box first." << endl;
-	
-	int img_num = 5;
-	//drawLines(configP, houghTransform, lines);
-	displayImg(houghTransform, configP->houghCWindowName, configP->screenWidth, configP->screenHeight, img_num);
 	}
 }
 
@@ -65,25 +74,31 @@ void CalibParams::houghLParametersP() {
 void CalibParams::houghLPCallback(int, void* userdata) {
 
 	ConfigParams* configP = reinterpret_cast<ConfigParams*>(userdata);
-	Mat houghImg = configP->morphImg2.clone();
 
-	// 1. Determine hough lines:
-	vector<Vec4i> lines;
 	try {
-		HoughLinesP(houghImg, lines, 1, CV_PI / 180, configP->minVotes, configP->minLineLength, configP->maxLineGap);
+		if ((configP->morphImg2.rows != 0) & (configP->morphImg2.cols != 0)) {
+			Mat houghImg = configP->morphImg2.clone();
 
-		configP->edgeLines = lines;
-		Mat houghTransform = configP->origImg.clone();
-		/*
-		// 2. Determine elliptical shapes:
-		vector<Vec3f> circles;
-		cv::HoughCircles(houghImg, circles, HOUGH_GRADIENT, configP->dp, configP->minDistBtwCenters, configP->highThresh, configP->centreThresh, configP->minRadius, configP->maxRadius);
-		*/
-		int img_num = 4;
-		drawLines(configP, houghTransform, lines);
-		//drawCircles(configP, houghTransform, circles);
-		displayImg(houghTransform, configP->houghWindowName, configP->screenWidth, configP->screenHeight, img_num);
-		houghC_Callback(0, configP);
+			// 1. Determine hough lines:
+			vector<Vec4i> lines;
+			HoughLinesP(houghImg, lines, 1, CV_PI / 180, configP->minVotes, configP->minLineLength, configP->maxLineGap);
+
+			configP->edgeLines = lines;
+			Mat houghTransform = configP->origImg.clone();
+			/*
+			// 2. Determine elliptical shapes:
+			vector<Vec3f> circles;
+			cv::HoughCircles(houghImg, circles, HOUGH_GRADIENT, configP->dp, configP->minDistBtwCenters, configP->highThresh, configP->centreThresh, configP->minRadius, configP->maxRadius);
+			*/
+			int img_num = 4;
+			drawLines(configP, houghTransform, lines);
+			//drawCircles(configP, houghTransform, circles);
+			displayImg(houghTransform, configP->houghWindowName, configP->screenWidth, configP->screenHeight, img_num);
+			houghC_Callback(0, configP);
+		}
+		else {
+			cout << "Please set roi-box first." << endl;
+		}
 	}
 	catch (cv::Exception) {
 		cout << "Please set roi-box first." << endl;
@@ -113,42 +128,48 @@ void CalibParams::morphParametersP2() {
 }
 void CalibParams::morphCallback2(int, void* userdata) {
 	ConfigParams* configP = reinterpret_cast<ConfigParams*>(userdata);
-	int operation = configP->morphTransformType_ + 1;
 
-	Mat morphImg2 = configP->morphImg.clone();
 	try {
-		// Morphological Operations:
-		if (operation > 3) {
-			Mat str_element = getStructuringElement(configP->morph_elem_shape, Size(2 * configP->kernel_morph_size_ + 1, 2 * configP->kernel_morph_size_ + 1), Point(configP->kernel_morph_size_, configP->kernel_morph_size_));
-			operation -= 2;
-			morphologyEx(morphImg2, morphImg2, operation, str_element);
+		int operation = configP->morphTransformType_ + 1;
+		if ((configP->morphImg.rows != 0) & (configP->morphImg.cols != 0)) {
+			Mat morphImg2 = configP->morphImg.clone();
+
+			// Morphological Operations:
+			if (operation > 3) {
+				Mat str_element = getStructuringElement(configP->morph_elem_shape, Size(2 * configP->kernel_morph_size_ + 1, 2 * configP->kernel_morph_size_ + 1), Point(configP->kernel_morph_size_, configP->kernel_morph_size_));
+				operation -= 2;
+				morphologyEx(morphImg2, morphImg2, operation, str_element);
+			}
+			else if (operation == 1) {
+				//if (erosion_elem == 0) { erosion_type = MORPH_RECT; }
+				//else if (erosion_elem == 1) { erosion_type = MORPH_CROSS; }
+				//else if (erosion_elem == 2) { erosion_type = MORPH_ELLIPSE; }
+
+				Mat element = getStructuringElement(MORPH_CROSS, Size(configP->kernel_morph_size_ + 1, configP->kernel_morph_size_ + 1));//, Point(configP->kernel_morph_size, configP->kernel_morph_size));
+				erode(morphImg2, morphImg2, element, Point(-1, -1), 2, 1, 1);
+			}
+
+			else if (operation == 2) {
+				//if (erosion_elem == 0) { erosion_type = MORPH_RECT; }
+				//else if (erosion_elem == 1) { erosion_type = MORPH_CROSS; }
+				//else if (erosion_elem == 2) { erosion_type = MORPH_ELLIPSE; }
+
+				Mat element = getStructuringElement(MORPH_RECT, Size(configP->kernel_morph_size_ + 1, configP->kernel_morph_size_ + 1), Point(configP->kernel_morph_size_, configP->kernel_morph_size_));
+				dilate(morphImg2, morphImg2, element);
+			}
+
+			if (morphImg2.empty()) {
+				morphImg2 = configP->origImg;
+			}
+			configP->morphImg2 = morphImg2;
+
+			int img_num = 3;
+			displayImg(morphImg2, configP->morphWindowName2, configP->screenWidth, configP->screenHeight, img_num);
+			houghLPCallback(0, configP);
 		}
-		else if (operation == 1) {
-			//if (erosion_elem == 0) { erosion_type = MORPH_RECT; }
-			//else if (erosion_elem == 1) { erosion_type = MORPH_CROSS; }
-			//else if (erosion_elem == 2) { erosion_type = MORPH_ELLIPSE; }
-
-			Mat element = getStructuringElement(MORPH_CROSS, Size(configP->kernel_morph_size_ + 1, configP->kernel_morph_size_ + 1));//, Point(configP->kernel_morph_size, configP->kernel_morph_size));
-			erode(morphImg2, morphImg2, element, Point(-1, -1), 2, 1, 1);
+		else {
+			cout << "Please set roi-box first." << endl;
 		}
-
-		else if (operation == 2) {
-			//if (erosion_elem == 0) { erosion_type = MORPH_RECT; }
-			//else if (erosion_elem == 1) { erosion_type = MORPH_CROSS; }
-			//else if (erosion_elem == 2) { erosion_type = MORPH_ELLIPSE; }
-
-			Mat element = getStructuringElement(MORPH_RECT, Size(configP->kernel_morph_size_ + 1, configP->kernel_morph_size_ + 1), Point(configP->kernel_morph_size_, configP->kernel_morph_size_));
-			dilate(morphImg2, morphImg2, element);
-		}
-
-		if (morphImg2.empty()) {
-			morphImg2 = configP->origImg;
-		}
-		configP->morphImg2 = morphImg2;
-
-		int img_num = 3;
-		displayImg(morphImg2, configP->morphWindowName2, configP->screenWidth, configP->screenHeight, img_num);
-		houghLPCallback(0, configP);
 	}
 	catch (cv::Exception) {
 		cout << "Please set roi-box first." << endl;
@@ -175,42 +196,47 @@ void CalibParams::morphParametersP() {
 }
 void CalibParams::morphCallback(int, void* userdata) {
 	ConfigParams* configP = reinterpret_cast<ConfigParams*>(userdata);
-	int operation = configP->morphTransformType + 1;
 
-	Mat morphImg = configP->cannyImg.clone();
 	try {
-		// Morphological Operations:
-		if (operation > 3) {
-			Mat str_element = getStructuringElement(configP->morph_elem_shape, Size(2 * configP->kernel_morph_size + 1, 2 * configP->kernel_morph_size + 1), Point(configP->kernel_morph_size, configP->kernel_morph_size));
-			operation -= 2;
-			morphologyEx(morphImg, morphImg, operation, str_element);
+		int operation = configP->morphTransformType + 1;
+		if ((configP->cannyImg.rows != 0) & (configP->cannyImg.cols != 0)) {
+			Mat morphImg = configP->cannyImg.clone();
+			// Morphological Operations:
+			if (operation > 3) {
+				Mat str_element = getStructuringElement(configP->morph_elem_shape, Size(2 * configP->kernel_morph_size + 1, 2 * configP->kernel_morph_size + 1), Point(configP->kernel_morph_size, configP->kernel_morph_size));
+				operation -= 2;
+				morphologyEx(morphImg, morphImg, operation, str_element);
+			}
+			else if (operation == 1) {
+				//if (erosion_elem == 0) { erosion_type = MORPH_RECT; }
+				//else if (erosion_elem == 1) { erosion_type = MORPH_CROSS; }
+				//else if (erosion_elem == 2) { erosion_type = MORPH_ELLIPSE; }
+
+				Mat element = getStructuringElement(MORPH_CROSS, Size(configP->kernel_morph_size + 1, configP->kernel_morph_size + 1));//, Point(configP->kernel_morph_size, configP->kernel_morph_size));
+				erode(morphImg, morphImg, element, Point(-1, -1), 2, 1, 1);
+			}
+
+			else if (operation == 2) {
+				//if (erosion_elem == 0) { erosion_type = MORPH_RECT; }
+				//else if (erosion_elem == 1) { erosion_type = MORPH_CROSS; }
+				//else if (erosion_elem == 2) { erosion_type = MORPH_ELLIPSE; }
+
+				Mat element = getStructuringElement(MORPH_RECT, Size(configP->kernel_morph_size + 1, configP->kernel_morph_size + 1), Point(configP->kernel_morph_size, configP->kernel_morph_size));
+				dilate(morphImg, morphImg, element);
+			}
+
+			if (morphImg.empty()) {
+				morphImg = configP->origImg;
+			}
+			configP->morphImg = morphImg;
+
+			int img_num = 2;
+			displayImg(morphImg, configP->morphWindowName, configP->screenWidth, configP->screenHeight, img_num);
+			morphCallback2(0, configP);
 		}
-		else if (operation == 1) {
-			//if (erosion_elem == 0) { erosion_type = MORPH_RECT; }
-			//else if (erosion_elem == 1) { erosion_type = MORPH_CROSS; }
-			//else if (erosion_elem == 2) { erosion_type = MORPH_ELLIPSE; }
-
-			Mat element = getStructuringElement(MORPH_CROSS, Size(configP->kernel_morph_size + 1, configP->kernel_morph_size + 1));//, Point(configP->kernel_morph_size, configP->kernel_morph_size));
-			erode(morphImg, morphImg, element, Point(-1, -1), 2, 1, 1);
+		else {
+			cout << "Please set roi-box first." << endl;
 		}
-
-		else if (operation == 2) {
-			//if (erosion_elem == 0) { erosion_type = MORPH_RECT; }
-			//else if (erosion_elem == 1) { erosion_type = MORPH_CROSS; }
-			//else if (erosion_elem == 2) { erosion_type = MORPH_ELLIPSE; }
-
-			Mat element = getStructuringElement(MORPH_RECT, Size(configP->kernel_morph_size + 1, configP->kernel_morph_size + 1), Point(configP->kernel_morph_size, configP->kernel_morph_size));
-			dilate(morphImg, morphImg, element);
-		}
-
-		if (morphImg.empty()) {
-			morphImg = configP->origImg;
-		}
-		configP->morphImg = morphImg;
-
-		int img_num = 2;
-		displayImg(morphImg, configP->morphWindowName, configP->screenWidth, configP->screenHeight, img_num);
-		morphCallback2(0, configP);
 	}
 	catch (cv::Exception) {
 		cout << "Please set roi-box first." << endl;
@@ -237,45 +263,52 @@ void CalibParams::edgeParametersP() {
 };
 void CalibParams::edgeDetectCallback(int, void* userdata) {
 	ConfigParams* configP = reinterpret_cast<ConfigParams*>(userdata);
-	int operation = configP->morphTransformType + 1;
-	int cannyKernelSize = configP->cannyKernel + 3;
-	cv::Mat cannyImg;
-	Mat img_ = configP->roiImg.clone();
+
 	try {
-		// Blur:
-		if (configP->gauss_ksize > 0) {
-			cvtColor(img_, cannyImg, COLOR_BGR2GRAY);
-			blur(cannyImg, cannyImg, Size(configP->gauss_ksize, configP->gauss_ksize), Point(-1, -1));
-		}
-		// Edge Detection:
-		if (!cannyImg.empty()) {
-			if (configP->highThresh == 0) {
-				configP->highThresh++;
+		if ((configP->roiImg.rows != 0) & (configP->roiImg.cols != 0)) {
+			int operation = configP->morphTransformType + 1;
+			int cannyKernelSize = configP->cannyKernel + 3;
+			cv::Mat cannyImg;
+			Mat img_ = configP->roiImg.clone();
+			// Blur:
+			if (configP->gauss_ksize > 0) {
+				cvtColor(img_, cannyImg, COLOR_BGR2GRAY);
+				blur(cannyImg, cannyImg, Size(configP->gauss_ksize, configP->gauss_ksize), Point(-1, -1));
 			}
-			Canny(cannyImg, cannyImg, configP->lowThresh, configP->highThresh, cannyKernelSize);
-			configP->cannyImg = cannyImg.clone();
-			int img_num = 1;
-			displayImg(cannyImg, configP->edgeWindowName, configP->screenWidth, configP->screenHeight, img_num);
-			morphCallback(0, configP);
-		}
-
-		if (0) {
-			if (img_.empty()) {
-				img_ = configP->origImg;
-				cannyImg = img_.clone();
-			}
-			else {
-
-				// Edge Detection:
-				Canny(img_, cannyImg, configP->lowThresh, configP->highThresh, cannyKernelSize);
+			// Edge Detection:
+			if (!cannyImg.empty()) {
+				if (configP->highThresh == 0) {
+					configP->highThresh++;
+				}
+				Canny(cannyImg, cannyImg, configP->lowThresh, configP->highThresh, cannyKernelSize);
 				configP->cannyImg = cannyImg.clone();
-
+				int img_num = 1;
+				displayImg(cannyImg, configP->edgeWindowName, configP->screenWidth, configP->screenHeight, img_num);
+				morphCallback(0, configP);
 			}
+
+			if (0) {
+				if (img_.empty()) {
+					img_ = configP->origImg;
+					cannyImg = img_.clone();
+				}
+				else {
+
+					// Edge Detection:
+					Canny(img_, cannyImg, configP->lowThresh, configP->highThresh, cannyKernelSize);
+					configP->cannyImg = cannyImg.clone();
+
+				}
+			}
+		}
+		else {
+			cout << "Please set roi-box first." << endl;
 		}
 	}
 	catch (cv::Exception) {
 		cout << "Please set roi-box first." << endl;
 	}
+
 }
 
 void CalibParams::blurThreshParametersP() {
@@ -297,32 +330,44 @@ void CalibParams::blurThreshParametersP() {
 }
 void CalibParams::blurThreshCallback(int, void* userdata) {
 	ConfigParams* configP = reinterpret_cast<ConfigParams*>(userdata);
-	int operation = configP->morphTransformType + 1;
-	int cannyKernelSize = configP->cannyKernel + 3;
-	cv::Mat blurThreshImg = configP->origImg.clone();
-	Mat img_ = configP->origImg.clone();
+	
 
-	cvtColor(img_, blurThreshImg, COLOR_BGR2GRAY);
+	try {
+		if ((configP->origImg.rows != 0) & (configP->origImg.cols != 0)) {
+			int operation = configP->morphTransformType + 1;
+			int cannyKernelSize = configP->cannyKernel + 3;
+			cv::Mat blurThreshImg = configP->origImg.clone();
+			Mat img_ = configP->origImg.clone();
+			cvtColor(img_, blurThreshImg, COLOR_BGR2GRAY);
 
-	// Blur:
-	if (configP->gauss_ksize > 0) {
-		blur(blurThreshImg, blurThreshImg, Size(configP->gauss_ksize, configP->gauss_ksize), Point(-1, -1));
+			// Blur:
+			if (configP->gauss_ksize > 0) {
+				blur(blurThreshImg, blurThreshImg, Size(configP->gauss_ksize, configP->gauss_ksize), Point(-1, -1));
+			}
+			// Thresholding
+
+			//threshold(blurThreshImg, blurThreshImg, configP->thresBin, 255, 0);
+			//cvtColor(blurThreshImg, blurThreshImg, COLOR_GRAY2BGR);
+
+			configP->blurThreshImg = blurThreshImg.clone();
+
+			int img_num = 0;
+
+			displayImg(blurThreshImg, configP->blurThreshWindowName, configP->screenWidth, configP->screenHeight, img_num);
+			edgeDetectCallback(0, configP);
+		}
+		else {
+			cout << "Please set roi-box first." << endl;
+		}
 	}
-	// Thresholding
+	catch (cv::Exception) {
+		cout << "Threshold parameters not set" << endl;
+	}
 
-	//threshold(blurThreshImg, blurThreshImg, configP->thresBin, 255, 0);
-	//cvtColor(blurThreshImg, blurThreshImg, COLOR_GRAY2BGR);
-
-	configP->blurThreshImg = blurThreshImg.clone();
-
-	int img_num = 0;
-
-	displayImg(blurThreshImg, configP->blurThreshWindowName, configP->screenWidth, configP->screenHeight, img_num);
-	edgeDetectCallback(0, configP);
 }
 
 
-void CalibParams::getDesktopResolution() {
+bool CalibParams::getDesktopResolution() {
 
 	RECT desktop;
 	// Get a handle to the desktop window
@@ -334,8 +379,9 @@ void CalibParams::getDesktopResolution() {
 	// (horizontal, vertical)
 	m_configParams.screenWidth = desktop.right;
 	m_configParams.screenHeight = desktop.bottom;
-}
 
+	return (desktop.right > 0 & desktop.bottom > 0) ? true : false;
+}
 
 void CalibParams::setup(CalibParams& cb_, cv::Mat& img)
 {
@@ -393,30 +439,41 @@ void CalibParams::setLane_ROIBox() {
 void CalibParams::roiLaneCallback(int, void* userdata) {
 	ConfigParams* configP = reinterpret_cast<ConfigParams*>(userdata);  // cvtColor(params->colImg(params->config->roiBbox), params->grayImg, CV_RGB2GRAY);
 
+	try {
+		if ((configP->origImg.rows != 0) & (configP->origImg.cols != 0)) {
+			Mat img_ = configP->origImg.clone();
+			Mat roiImg;
+			if (configP->x1_roi + configP->recWidth >= img_.cols) {
+				configP->recWidth = img_.cols - configP->x1_roi;
+				setTrackbarPos("RecWidth", configP->roiBoxWindowName, configP->recWidth);
+			}
 
-	Mat img_ = configP->origImg.clone();
-	Mat roiImg;
-	if (configP->x1_roi + configP->recWidth >= img_.cols) {
-		configP->recWidth = img_.cols - configP->x1_roi;
-		setTrackbarPos("RecWidth", configP->roiBoxWindowName, configP->recWidth);
+			if (configP->y1_roi + configP->recHeight >= img_.rows) {
+				configP->recHeight = img_.rows - configP->y1_roi;
+				setTrackbarPos("RecHeight", configP->roiBoxWindowName, configP->recHeight);
+			}
+
+			Rect roi_box = Rect(configP->x1_roi, configP->y1_roi, configP->recWidth, configP->recHeight);
+			configP->roi_Bbox = roi_box;
+			roiImg = img_(roi_box);
+			//cvtColor(img_(roi_box), roiImg, COLOR_BGR2GRAY);
+
+			configP->roiImg = roiImg.clone();
+
+			int img_num = 0;
+			displayImg(roiImg, configP->roiBoxWindowName, configP->screenWidth, configP->screenHeight, img_num);
+		}
+		else {
+			cout << "Parameters not correctly set for region of interest" << endl;
+		}
+	}
+	catch (cv::Exception) {
+		cout << "Parameters not correctly set for region of interest" << endl;
+		return;
 	}
 
-	if (configP->y1_roi + configP->recHeight >= img_.rows) {
-		configP->recHeight = img_.rows - configP->y1_roi;
-		setTrackbarPos("RecHeight", configP->roiBoxWindowName, configP->recHeight);
-	}
-
-	Rect roi_box = Rect(configP->x1_roi, configP->y1_roi, configP->recWidth, configP->recHeight);
-	configP->roi_Bbox = roi_box;
-	roiImg = img_(roi_box);
-	//cvtColor(img_(roi_box), roiImg, COLOR_BGR2GRAY);
-
-	configP->roiImg = roiImg.clone();
-
-	int img_num = 0;
-
-	displayImg(roiImg, configP->roiBoxWindowName, configP->screenWidth, configP->screenHeight, img_num);
 	edgeDetectCallback(0, configP);
+
 }
 
 
@@ -438,31 +495,40 @@ void CalibParams::roiCarCallback(int, void* userdata) {
 	ConfigParams* configP = reinterpret_cast<ConfigParams*>(userdata);   // cvtColor(params->colImg(params->config->roiBbox), params->grayImg, CV_RGB2GRAY);
 	//setTrackbarPos("X1-Pos", configP->roiBoxWindowName_car, configP->x1_roi_car);
 	//setTrackbarPos("Y1-Pos", configP->roiBoxWindowName_car, configP->y1_roi_car);
+	try {
+		if ((configP->origImg.rows != 0) & (configP->origImg.cols != 0)) {
+			Mat img_ = configP->origImg.clone();
+			Mat roiImg;
+			if (configP->x1_roi_car + configP->recWidth_car >= img_.cols) {
+				configP->recWidth_car = img_.cols - configP->x1_roi_car;
 
-	Mat img_ = configP->origImg.clone();
-	Mat roiImg;
-	if (configP->x1_roi_car + configP->recWidth_car >= img_.cols) {
-		configP->recWidth_car = img_.cols - configP->x1_roi_car;
+				setTrackbarPos("RecWidth", configP->roiBoxWindowName_car, configP->recWidth_car);
+			}
 
-		setTrackbarPos("RecWidth", configP->roiBoxWindowName_car, configP->recWidth_car);
+			if (configP->y1_roi_car + configP->recHeight_car >= img_.rows) {
+				configP->recHeight_car = img_.rows - configP->y1_roi_car;
+				setTrackbarPos("RecHeight", configP->roiBoxWindowName_car, configP->recHeight_car);
+			}
+
+			Rect roi_box_car = Rect(configP->x1_roi_car, configP->y1_roi_car, configP->recWidth_car, configP->recHeight_car);
+			configP->roi_Box_car = roi_box_car;
+			roiImg = img_(roi_box_car);
+			//cvtColor(img_(roi_box), roiImg, COLOR_BGR2GRAY);
+
+			configP->roiImg_car = roiImg.clone();
+
+			int img_num = -1;
+
+			displayImg(roiImg, configP->roiBoxWindowName_car, configP->screenWidth, configP->screenHeight, img_num);
+		}
+		else {
+			cout << "Parameters not correctly set for region of interest" << endl;
+		}
 	}
-
-	if (configP->y1_roi_car + configP->recHeight_car >= img_.rows) {
-		configP->recHeight_car = img_.rows - configP->y1_roi_car;
-		setTrackbarPos("RecHeight", configP->roiBoxWindowName_car, configP->recHeight_car);
+	catch (cv::Exception) {
+		cout << "Parameters not correctly set for region of interest" << endl;
+		return;
 	}
-
-	Rect roi_box_car = Rect(configP->x1_roi_car, configP->y1_roi_car, configP->recWidth_car, configP->recHeight_car);
-	configP->roi_Box_car = roi_box_car;
-	roiImg = img_(roi_box_car);
-	//cvtColor(img_(roi_box), roiImg, COLOR_BGR2GRAY);
-
-	configP->roiImg_car = roiImg.clone();
-
-	int img_num = -1;
-
-	displayImg(roiImg, configP->roiBoxWindowName_car, configP->screenWidth, configP->screenHeight, img_num);
-
 };
 
 /* -------------------- Helper functions --------------------*/
@@ -540,7 +606,7 @@ void CalibParams::displayImg(const Mat& img, const std::string& title, const int
 	}
 	catch (cv::Exception) {
 
-		cout << "Defined window out of bounds." << endl;	
+		cout << "Defined window out of bounds." << endl;
 	}
 }
 

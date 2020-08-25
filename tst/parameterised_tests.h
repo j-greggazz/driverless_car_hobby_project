@@ -1,6 +1,6 @@
 #pragma once
-#ifndef OPENCV_API_PARAMTEST 
-#define OPENCV_API_PARAMTEST
+#ifndef OPENCV_API_PARAMTEST__H__ 
+#define OPENCV_API_PARAMTEST__H__
 #include <OpenCV_API_Static_Global_Functions_Tests.h>
 #include "gtest/gtest.h"
 
@@ -13,6 +13,6 @@ public:
     bool tempVar;
 };
 
-#endif //EXAMPLEPROJECT_FORMULA_H
+#endif 
 
 

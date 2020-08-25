@@ -112,11 +112,14 @@ public:
 
 		// Close-windows 
 		bool terminateSetup = false;
+
+		// For testing
+		bool testing = false;
 	};
 
 	/* -------------------- Preprocessing --------------------*/
 	//  -- Setup --
-	void getDesktopResolution();
+	bool getDesktopResolution();
 	static void setup(CalibParams& cb,  cv::Mat& img);
 
 	//  -- ROI Setting
@@ -156,6 +159,7 @@ public:
 	preprocessParams m_preprocessVar;
 	preprocessImgs m_preprocessImg;
 	houghParams m_houghVar;
+
 
 
 

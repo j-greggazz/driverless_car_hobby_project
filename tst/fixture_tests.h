@@ -1,5 +1,6 @@
-#ifndef FIXTURE_TESTS_H
-#define FIXTURE_TESTS_H
+#pragma once
+#ifndef FIXTURE_TESTS__H__
+#define FIXTURE_TESTS__H__
 
 #pragma once
 
@@ -9,13 +10,23 @@
 #include <conio.h>
 #include <stdlib.h>
 #include <direct.h>
-#include <dashboardTracker.h>
+#include <calibParams.h>
 #include <QApplication>
 #include <QWidget>
 #include <mainwindow.h>
 
+//class CalibParams_Mock
 
+class SetupTest : public testing::Test {
 
+public:
+	CalibParams m_cb;
+
+	// Constructor / Destructor
+	SetupTest();
+	~SetupTest();
+};
+#endif
 
 
 /*
@@ -51,4 +62,3 @@ public:
 
 };
 */
-#endif

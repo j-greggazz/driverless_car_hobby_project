@@ -50,7 +50,7 @@ int main(int argc, char* argv[])
 
 			if (!w.getAbort()) {
 				std::string cur_dir(argv[0]);
-				runThreadsOnHeap(path, cur_dir);
+				runThreadsOnStack(path, cur_dir);
 			}
 		};
 	}

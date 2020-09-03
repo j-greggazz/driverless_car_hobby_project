@@ -1,12 +1,5 @@
-#include <iostream>
-#include <stdio.h>
-#include <conio.h>
-#include <stdlib.h>
-#include <direct.h>
+#include <pch2.h>
 #include <dashboardTracker.h>
-#include <QApplication>
-#include <QWidget>
-#include <mainwindow.h>
 
 
 using namespace cv;

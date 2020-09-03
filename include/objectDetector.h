@@ -1,7 +1,7 @@
 #pragma once
 #ifndef objectDetector__H__
 #define objectDetector__H__
-
+/*
 #include <string>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -14,6 +14,8 @@
 #include <vector>
 #include <iostream>
 #include <mutex>
+*/
+#include <pch.h>
 #define HAS_CUDA 1
 
 class ObjectDetector {

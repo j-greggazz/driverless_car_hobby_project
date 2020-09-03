@@ -7,6 +7,7 @@ target_link_libraries(CalibrationParameters ${OpenCV_LIBS})
 
 add_library(ObjectDetection STATIC objectDetector.cpp ../include/objectDetector.h)
 target_link_libraries(ObjectDetection ${OpenCV_LIBS})
+target_precompile_headers(ObjectDetection PRIVATE ../include/pch.h)
 
 add_library(LineDetection STATIC lineDetector.cpp ../include/lineDetector.h)
 target_link_libraries(LineDetection ${OpenCV_LIBS})
@@ -49,3 +50,4 @@ qt5_wrap_cpp(project_sources_moc ${project_headers})
 set(project_sources mainwindow.cpp main.cpp DashboardTrackerRun.cpp)
 add_executable(DashboardTrackerRun ${project_headers} ${project_sources} ${project_sources_moc} ${project_headers_wrapped})
 target_link_libraries(DashboardTrackerRun DashboardTracker Qt5::Core Qt5::Gui Qt5::Widgets)
+#target_precompile_headers(DashboardTrackerRun PRIVATE ../include/pch2.h)

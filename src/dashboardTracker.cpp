@@ -2,11 +2,7 @@
 using namespace cv;
 using namespace std;
 
-DashboardTracker::DashboardTracker(const int& iD, const LineDetector& lD, const TrafficDetector& tD, const CarTracker& cT) {
-	m_id = iD;
-	m_ld = lD;
-	m_td = tD;
-	m_ct = cT;
+DashboardTracker::DashboardTracker(const int& iD, const LineDetector& lD, const TrafficDetector& tD, const CarTracker& cT): m_id(iD), m_ld(lD), m_td(tD), m_ct(cT){
 	m_ld.setId(iD);
 	m_td.setId(iD);
 	m_ct.setId(iD);

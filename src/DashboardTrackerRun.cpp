@@ -202,7 +202,7 @@ void singleThreadContourTest() {
 	}
 }
 
-void runThreadsOnHeap(const string& video_path, const string& cur_dir) {
+void runHeapObjectThreads(const string& video_path, const string& cur_dir) {
 	// 0. Determine working directory for reference to loaded models, data
 	int pos = cur_dir.find_last_of("/\\");
 	std::string filename = cur_dir.substr(pos + 1);
@@ -453,7 +453,7 @@ void runThreadsOnHeap(const string& video_path, const string& cur_dir) {
 	return;
 }
 
-void runThreadsOnStack(const string& video_path, const string& cur_dir) {
+void runStackObjectThreads(const string& video_path, const string& cur_dir) {
 
 	// 0. Determine working directory for reference to loaded models, data
 	int pos = cur_dir.find_last_of("/\\");

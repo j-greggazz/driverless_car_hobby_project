@@ -6,8 +6,8 @@ using namespace cv;
 using namespace std;
 
 // Ctrl+k Ctrl+D align code
-void runThreadsOnHeap(const string& video_path, const string& cur_dir);
-void runThreadsOnStack(const string& video_path, const string& cur_dir);
+void runHeapObjectThreads(const string& video_path, const string& cur_dir);
+void runStackObjectThreads(const string& video_path, const string& cur_dir);
 void runStaticMethodThreads(const string& video_path, const std::string& cur_dir);
 void singleThreadContourTest();
 void testGPUFunctions();
@@ -43,7 +43,7 @@ int main(int argc, char* argv[])
 
 			if (!w.getAbort()) {
 				std::string cur_dir(argv[0]);
-				runThreadsOnStack(path, cur_dir);
+				runStackObjectThreads(path, cur_dir);
 			}
 		};
 	}

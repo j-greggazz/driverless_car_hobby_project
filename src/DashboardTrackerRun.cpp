@@ -574,7 +574,7 @@ void runStackObjectThreads(const string& video_path, const string& cur_dir) {
 		}
 
 		// 8. Start processing frames 
-		auto start = std::chrono::high_resolution_clock::now();
+		//auto start = std::chrono::high_resolution_clock::now();
 		int i = 0;
 		int threadNum = 0;
 		while (vCap.isOpened() && quit != 113) {
@@ -606,7 +606,7 @@ void runStackObjectThreads(const string& video_path, const string& cur_dir) {
 
 						if (imgProcessed) {
 							wait = false;
-							start = std::chrono::high_resolution_clock::now();
+							//start = std::chrono::high_resolution_clock::now();
 
 							// Access all tracker/detection variables from each thread and display them on current frame:
 
@@ -662,8 +662,8 @@ void runStackObjectThreads(const string& video_path, const string& cur_dir) {
 			Mat temp;
 			cv::resize(curr_img, temp, cv::Size(), 0.75, 0.75);
 			imshow("Frame_i", temp);
-			auto finish = std::chrono::high_resolution_clock::now();
-			std::chrono::duration<double> elapsed = finish - start;
+			//auto finish = std::chrono::high_resolution_clock::now();
+			//std::chrono::duration<double> elapsed = finish - start;
 
 			/*{
 				// Writing to 'cout'
@@ -834,7 +834,6 @@ void runStaticMethodThreads(const string& video_path, const string& cur_dir) {
 				if (threadNum == num_threads) {
 					threadNum = 0;
 				}
-
 			}
 
 			Mat curr_img;
@@ -843,12 +842,8 @@ void runStaticMethodThreads(const string& video_path, const string& cur_dir) {
 				if (i % num_threads == j) {
 
 					while (wait) {
-						bool imgProcessed;
 
-						//  Reading
-						imgProcessed = DashboardTrackers[j].getImgProcessed();
-
-						if (imgProcessed) {
+						if (DashboardTrackers[j].getImgProcessed()) {
 							wait = false;
 
 							// Access all tracker/detection variables from each thread and display them on current frame:

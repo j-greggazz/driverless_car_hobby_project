@@ -28,6 +28,7 @@ include_directories(include ${OpenCV_INCLUDE_DIR} ${Boost_INCLUDE_DIR})
 
 add_subdirectory(src)
 add_subdirectory(tst)
+add_subdirectory(clientApp)
 add_subdirectory(lib/googletest)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)

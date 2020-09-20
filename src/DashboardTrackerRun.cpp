@@ -8,7 +8,7 @@
 
 #include <chrono>
 #include <iostream>
-
+#include <WS2tcpip.h>
 #include <conio.h>
 #include <stdlib.h>
 #include <direct.h>
@@ -219,17 +219,20 @@ void runHeapObjectThreads(const string& video_path, const string& cur_dir) {
 	int startFrame = 11250;// 10750;
 	bool success = initialiseVideo(vCap, video_path, startFrame);
 
+	// 2. Setup server 
+
+
 	if (success) {
-		// 2. Program flow-control variables
+		// 3. Program flow-control variables
 		char quit = 0;
 		int processedFrames = 0;
 		int frameCount = 0;
 
-		// 3. Define tracker to be used:
+		// 4. Define tracker to be used:
 		string trackerTypes[8] = { "BOOSTING", "MIL", "KCF", "TLD", "MEDIANFLOW", "GOTURN", "MOSSE", "CSRT" };
 		string trackerType = trackerTypes[2];
 
-		// 4. Define threading-related safety variables:
+		// 5. Define threading-related safety variables:
 		mutex lanesGuard;
 		mutex trackBoxGuard;
 		mutex imgAvailGuard;
@@ -251,13 +254,13 @@ void runHeapObjectThreads(const string& video_path, const string& cur_dir) {
 		DashboardTracker* dt_ptr = new DashboardTracker();// = DashboardTracker();
 		vector<DashboardTracker*> DashboardTrackers(num_threads, dt_ptr);
 
-		// 5. Start Setup of program
+		// 6. Start Setup of program
 		Mat frame;
 		vCap.read(frame);
 		CalibParams cb;
 		CalibParams::setup(cb, frame);
 
-		// 6. Create temp variables:
+		// 7. Create temp variables:
 		vector<Rect2d> trackBoxVec_temp;
 		vector<int> trackingStatus_temp;
 		vector<vector<cv::Vec4i>> lines_temp;
@@ -267,18 +270,18 @@ void runHeapObjectThreads(const string& video_path, const string& cur_dir) {
 		TrafficDetector td_temp;
 
 
-		// 7. Initialise threads
+		// 8. Initialise threads
 		for (int i = 0; i < num_threads; i++) {
 
-			// 7.1. Declare id for given objects
+			// 8.1. Declare id for given objects
 			int id = i;
 
-			// 7.2. Declare line-detector object
+			// 8.2. Declare line-detector object
 			LineDetector ld;
 			ld.setParams(cb.getPreprocessParams(), cb.getHoughParams(), cb.m_configParams.roi_Bbox);
 			//cout << ld.getRoiBox() << "accessed private variable" << endl;
 
-			// 7.3. Declare traffic-detector object
+			// 8.3. Declare traffic-detector object
 			TrafficDetector td;
 			td.setRoiBox(cb.m_configParams.roi_Box_car);
 
@@ -306,24 +309,24 @@ void runHeapObjectThreads(const string& video_path, const string& cur_dir) {
 				return;
 			}
 
-			// 7.4. Declare traffic-tracker object
+			// 8.4. Declare traffic-tracker object
 			CarTracker ct;
 			ct.setTrackerType(trackerType);
 			ct.declareTracker(trackerType);
 
 			//DashboardTracker* dashboardTracker_ptr0 = new DashboardTracker();
 
-			// 7.5. Declare autonomous driving object as sum of all above objects
+			// 8.5. Declare autonomous driving object as sum of all above objects
 			DashboardTrackers[i]->setLd(ld);
 			DashboardTrackers[i]->setCt(ct);
 			DashboardTrackers[i]->setTd(td);
 			DashboardTrackers[i]->setId(i);
 
-			// 7.6 Initialise threads: // Rewrite
+			// 8.6 Initialise threads: // Rewrite
 			frameThreads[i] = DashboardTrackers[i]->dashboardThread(std::ref(imgAvailable), std::ref(stop_threading), std::ref(trackBoxVec), std::ref(trackingStatus), std::ref(lines), std::ref(imgAvailGuard), std::ref(trackStatusGuard), std::ref(trackBoxGuard), std::ref(lanesGuard));
 		}
 
-		// 8. Start processing frames 
+		// 9. Start processing frames 
 		auto start = std::chrono::high_resolution_clock::now();
 		int i = 0;
 		int threadNum = 0;

@@ -24,8 +24,11 @@ target_link_libraries(CarTracker ${OpenCV_LIBS})
 add_library(OPENCV_API_CALLS STATIC opencv_api_calls.cpp ../include/opencv_api_calls.h)
 target_link_libraries(OPENCV_API_CALLS ${OpenCV_LIBS})
 
+add_library(Server STATIC server.cpp ../include/server.h)
+target_link_libraries(Server ${OpenCV_LIBS})
+
 add_library(DashboardTracker STATIC dashboardTracker.cpp ../include/dashboardTracker.h)
-target_link_libraries(DashboardTracker ${OpenCV_LIBS} CalibrationParameters ObjectDetection LineDetection TrafficDetection ContourDetection CarTracker)
+target_link_libraries(DashboardTracker ${OpenCV_LIBS} CalibrationParameters ObjectDetection LineDetection TrafficDetection ContourDetection CarTracker Server)
 
 
 ### ~~~~~~~~~~~~ QT SETTINGS ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

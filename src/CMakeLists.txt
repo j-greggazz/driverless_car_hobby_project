@@ -52,5 +52,7 @@ qt5_wrap_cpp(project_sources_moc ${project_headers})
 
 set(project_sources mainwindow.cpp main.cpp DashboardTrackerRun.cpp)
 add_executable(DashboardTrackerRun ${project_headers} ${project_sources} ${project_sources_moc} ${project_headers_wrapped})
-target_link_libraries(DashboardTrackerRun DashboardTracker Qt5::Core Qt5::Gui Qt5::Widgets)
+add_executable(MyExe main.cpp)
+
+target_link_libraries(DashboardTrackerRun DashboardTracker Qt5::Core Qt5::Gui Qt5::Widgets wsock32 ws2_32) # target winsock
 #target_precompile_headers(DashboardTrackerRun PRIVATE ../include/pch2.h)

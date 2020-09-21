@@ -8,7 +8,7 @@ set(project_headers client.h)
 
 add_executable(${Client_Project} ${project_sources} ${project_headers})
 
-set( DEPENDENCIES ${OpenCV_LIBS} )
+set( DEPENDENCIES ${OpenCV_LIBS} wsock32 ws2_32) 
 
 target_link_libraries(${Client_Project} PUBLIC ${DEPENDENCIES}) # target linked library of source_binary
 

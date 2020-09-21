@@ -1,83 +1,47 @@
-#include <carTracker.h>
+#include <server.h>
+#include <string>
 
-
-using namespace cv;
-using namespace std;
-
-void CarTracker::declareTracker(const string& trackerType)
+int main(int argc, char* argv[])
 {
-	if (trackerType == "BOOSTING")
-		m_tracker = TrackerBoosting::create();
-	if (trackerType == "MIL")
-		m_tracker = TrackerMIL::create();
-	if (trackerType == "KCF")
-		m_tracker = TrackerKCF::create();
-	if (trackerType == "TLD")
-		m_tracker = TrackerTLD::create();
-	if (trackerType == "MEDIANFLOW")
-		m_tracker = TrackerMedianFlow::create();
-	if (trackerType == "GOTURN")
-		m_tracker = TrackerGOTURN::create();
-	if (trackerType == "MOSSE")
-		m_tracker = TrackerMOSSE::create();
-	if (trackerType == "CSRT")
-		m_tracker = TrackerCSRT::create();
+	std::string ipAddress = Server::getIpAddress();
+	int port = 54000;
+
+	WSADATA data;
+	WORD ver = MAKEWORD(2, 2);
+	int wsResult = WSAStartup(ver, &data);
+	if (wsResult != 0) {
+		std::cerr << "Can't start Winsock, Err #" << wsResult << std::endl;
+		return 0;
+	}
+	
+	SOCKET clientSocket = socket(AF_INET, SOCK_STREAM, 0);
+	if (clientSocket == INVALID_SOCKET) {
+		std::cerr << "Can't create socket, Err #" << WSAGetLastError() << std::endl;
+		WSACleanup();
+		return 0;
+	}
+
+	// Fill in a hint structure
+	sockaddr_in hints;
+	hints.sin_family = AF_INET;
+	hints.sin_port = htons(port);
+	inet_pton(AF_INET, ipAddress.c_str(), &hints.sin_addr);
+
+	// Connect to server
+	int connection_result = connect(clientSocket, (sockaddr*)&hints, sizeof(hints));
+
+	if (connection_result == SOCKET_ERROR) {
+		std::cerr << "Can't connect to server, Err #" << WSAGetLastError() << std::endl;
+		WSACleanup();
+		return 0;
+	}
+
+	char buf[4096];
+	std::string userInput;
+
+	do {
+		// receive Mat and display on screen
+
+	} while(userInput.size() > 0)
+
 }
-
-void CarTracker::initTracker(const cv::Mat& frame, const cv::Rect2d& trackBox)
-{
-	m_tracker->init(frame, trackBox);
-	m_trackerExists = true;
-}
-
-bool CarTracker::updateTracker(const cv::Mat& frame, cv::Rect2d& trackBox)
-{
-	return m_tracker->update(frame, trackBox);
-}
-
-void CarTracker::setId(const int& iD)
-{
-	m_id = iD;
-}
-
-void CarTracker::setCurrImg(const cv::Mat& curr_Img)
-{
-	m_currImg = curr_Img;
-}
-
-cv::Mat CarTracker::getCurrImg() const
-{
-	return m_currImg;
-}
-
-std::string CarTracker::getTrackerType() const
-{
-	return m_trackerType;
-}
-
-std::vector<cv::Ptr<cv::Tracker>> CarTracker::getTrackersVec() const
-{
-	return m_trackersVec;
-}
-
-void CarTracker::setTrackersVec(const std::vector<cv::Ptr<cv::Tracker>>& newTrackersVec)
-{
-	m_trackersVec = newTrackersVec;
-}
-
-cv::Ptr<cv::Tracker> CarTracker::getTracker() const
-{
-	return m_tracker;
-}
-
-void CarTracker::setTracker(const cv::Ptr<cv::Tracker>& tracker_)
-{
-	m_tracker = tracker_;
-}
-
-void CarTracker::setTrackerType(const std::string& tracker_type)
-{
-	m_trackerType = tracker_type;
-}
-
-

@@ -1,14 +1,16 @@
+#include <server.h>
 #include <lineDetector.h>
 #include <trafficDetector.h>
 #include <contourDetector.h>
 #include <carTracker.h>
 #include <dashboardTracker.h>
 #include <calibParams.h>
+
+
 //#include <pch2.h>
 
 #include <chrono>
 #include <iostream>
-#include <WS2tcpip.h>
 #include <conio.h>
 #include <stdlib.h>
 #include <direct.h>
@@ -521,8 +523,17 @@ void runStackObjectThreads(const string& video_path, const string& cur_dir) {
 		LineDetector ld_temp;
 		TrafficDetector td_temp;
 
+		// 7. Intialise Server Thread
 
-		// 7. Initialise threads
+		//Server server("127.0,0,1", 54010, Server::MessageReceivedCallback());
+		std::string ipAddress = Server::getIpAddress();
+		Server server(ipAddress, 54010);
+		thread serverThread;
+		if (server.init()) {
+			serverThread = server.serverThread(std::ref(vCap), std::ref(stop_threading));
+		}
+
+		// 8. Initialise threads
 		for (int i = 0; i < num_threads; i++) {
 
 			// 7.1. Declare id for given objects
@@ -576,7 +587,7 @@ void runStackObjectThreads(const string& video_path, const string& cur_dir) {
 			frameThreads[i] = DashboardTrackers[i].dashboardThread(std::ref(imgAvailable), std::ref(stop_threading), std::ref(trackBoxVec), std::ref(trackingStatus), std::ref(lines), std::ref(imgAvailGuard), std::ref(trackStatusGuard), std::ref(trackBoxGuard), std::ref(lanesGuard));
 		}
 
-		// 8. Start processing frames 
+		// 9. Start processing frames 
 		//auto start = std::chrono::high_resolution_clock::now();
 		int i = 0;
 		int threadNum = 0;
@@ -664,7 +675,7 @@ void runStackObjectThreads(const string& video_path, const string& cur_dir) {
 			}
 			Mat temp;
 			cv::resize(curr_img, temp, cv::Size(), 0.75, 0.75);
-			imshow("Frame_i", temp);
+			cv::imshow("Frame_i", temp);
 			//auto finish = std::chrono::high_resolution_clock::now();
 			//std::chrono::duration<double> elapsed = finish - start;
 
@@ -682,7 +693,7 @@ void runStackObjectThreads(const string& video_path, const string& cur_dir) {
 				for (int m = 0; m < num_threads; m++) {
 					frameThreads[m].join();
 				}
-
+				serverThread.join();
 				break;
 			}
 
@@ -691,6 +702,7 @@ void runStackObjectThreads(const string& video_path, const string& cur_dir) {
 			for (int m = 0; m < 3; m++) {
 				frameThreads[m].join();
 			}
+			serverThread.join();
 		}
 
 		return;
@@ -899,6 +911,7 @@ void runStaticMethodThreads(const string& video_path, const string& cur_dir) {
 
 			Mat temp;
 			cv::resize(curr_img, temp, cv::Size(), 0.75, 0.75);
+
 			imshow("Frame_i", temp);
 
 			//{
@@ -913,6 +926,7 @@ void runStaticMethodThreads(const string& video_path, const string& cur_dir) {
 				for (int m = 0; m < num_threads; m++) {
 					frameThreads[m].join();
 				}
+				
 				break;
 			}
 

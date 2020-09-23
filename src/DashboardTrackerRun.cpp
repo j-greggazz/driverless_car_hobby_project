@@ -527,7 +527,7 @@ void runStackObjectThreads(const string& video_path, const string& cur_dir) {
 
 		//Server server("127.0,0,1", 54010, Server::MessageReceivedCallback());
 		std::string ipAddress = Server::getIpAddress();
-		Server server(ipAddress, 54010);
+		Server server(ipAddress, 54000);
 		thread serverThread;
 		if (server.init()) {
 			serverThread = server.serverThread(std::ref(vCap), std::ref(stop_threading));
@@ -676,6 +676,7 @@ void runStackObjectThreads(const string& video_path, const string& cur_dir) {
 			Mat temp;
 			cv::resize(curr_img, temp, cv::Size(), 0.75, 0.75);
 			cv::imshow("Frame_i", temp);
+			server.setFrame(curr_img);
 			//auto finish = std::chrono::high_resolution_clock::now();
 			//std::chrono::duration<double> elapsed = finish - start;
 

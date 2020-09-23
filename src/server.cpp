@@ -68,11 +68,16 @@ void Server::run(cv::VideoCapture& vCap, std::atomic<bool>& stopThreads)
 		}
 		//while (vCap.isOpened()) {
 		if (!m_frame.empty()) {
-			size_t frameSize = m_frame.total() * m_frame.elemSize();
+			/*size_t frameSize = m_frame.total() * m_frame.elemSize();
 			m_sentFrame = (m_frame.reshape(0, 1));
-			char* sentData = reinterpret_cast<char*>(m_sentFrame.data);
+			char* sentData = reinterpret_cast<char*>(m_sentFrame.data);*/
+			std::vector<uchar> buf(50000);
+			cv::imencode(".jpg", m_frame, buf);
+			size_t buffer_size = buf.size();
+
 			for (size_t i = 0; i < m_clients.size(); i++) {
-				send(m_clients[i], sentData, frameSize, 0);
+				send(m_clients[i], reinterpret_cast<char*>(&buffer_size), sizeof(buffer_size), 0);
+				send(m_clients[i], reinterpret_cast<char*>(buf.data()), buffer_size, 0);
 			}
 		}
 
@@ -108,7 +113,7 @@ std::thread Server::serverThread(cv::VideoCapture& vCap, std::atomic<bool>& stop
 
 void Server::setFrame(const cv::Mat& frame)
 {
-	m_sentFrame = frame;
+	m_frame = frame;
 }
 
 void Server::cleanup()

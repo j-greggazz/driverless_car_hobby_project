@@ -72,12 +72,31 @@ void Server::run(cv::VideoCapture& vCap, std::atomic<bool>& stopThreads)
 			m_sentFrame = (m_frame.reshape(0, 1));
 			char* sentData = reinterpret_cast<char*>(m_sentFrame.data);*/
 			std::vector<uchar> buf(50000);
+			//cv::imwrite("../../data/img_sample.jpg", m_frame);
 			cv::imencode(".jpg", m_frame, buf);
 			size_t buffer_size = buf.size();
 
 			for (size_t i = 0; i < m_clients.size(); i++) {
-				send(m_clients[i], reinterpret_cast<char*>(&buffer_size), sizeof(buffer_size), 0);
-				send(m_clients[i], reinterpret_cast<char*>(buf.data()), buffer_size, 0);
+				//send(m_clients[i], reinterpret_cast<char*>(&buffer_size), sizeof(buffer_size), 0);
+				send(m_clients[i], (char *)(&buffer_size), sizeof(buffer_size), 0);
+				size_t remain = buffer_size;
+				size_t offset = 0;
+				int len;
+				while ((remain > 0) && ((len = send(m_clients[i], (char *)(buf.data()) + offset, remain, 0)) > 0))
+				{
+					remain -= len;
+					offset += len;
+				}
+				if (len <= 0)
+				{
+					// handle fatal error
+				}
+				
+				//send(m_clients[i], reinterpret_cast<char*>(buf.data()), buffer_size, 0);
+				closesocket(m_clients[i]);
+				std::cout << "buffer_size sent was: " << buffer_size << std::endl;
+				cv::Mat frame2 = cv::imdecode(cv::Mat(buf), 1);
+				cv::imwrite("../../data/img_sample.jpg", frame2);
 			}
 		}
 
@@ -119,6 +138,43 @@ void Server::setFrame(const cv::Mat& frame)
 void Server::cleanup()
 {
 	WSACleanup();         // The WSACleanup function terminates use of the Winsock 2 DLL (Ws2_32.dll).
+}
+
+void Server::testFunc(){
+
+	int counter = 0;
+	cv::Mat frame = cv::imread("../../data/img_sample.jpg");
+	SOCKET listener = createSocket();
+	if (listener == INVALID_SOCKET) {
+		return;
+	}
+	SOCKET client = waitForConnection(listener);
+	if (client != INVALID_SOCKET) {
+		closesocket(listener);
+		WSACleanup();
+	}
+	std::vector<uchar> buf(50000);
+	//cv::imwrite("../../data/img_sample.jpg", m_frame);
+	cv::imencode(".jpg", frame, buf);
+	size_t buffer_size = buf.size();
+
+	send(client, (char*)(&buffer_size), sizeof(buffer_size), 0);
+	size_t remain = buffer_size;
+	size_t offset = 0;
+	int len;
+	while ((remain > 0) && ((len = send(client, (char*)(buf.data()) + offset, remain, 0)) > 0))
+	{
+		remain -= len;
+		offset += len;
+	}
+	if (len <= 0)
+	{
+		// handle fatal error
+	}
+
+	//send(m_clients[i], reinterpret_cast<char*>(buf.data()), buffer_size, 0);
+	closesocket(client);
+
 }
 
 SOCKET Server::createSocket()

@@ -53,7 +53,7 @@ public:  // Prefix "FD" indicates FileDescriptor because all sockets in Unix are
 	// Cleanup
 	void cleanup();
 
-
+	void testFunc();
 
 private:
 

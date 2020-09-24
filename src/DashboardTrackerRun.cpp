@@ -676,7 +676,7 @@ void runStackObjectThreads(const string& video_path, const string& cur_dir) {
 			Mat temp;
 			cv::resize(curr_img, temp, cv::Size(), 0.75, 0.75);
 			cv::imshow("Frame_i", temp);
-			server.setFrame(curr_img);
+			server.setFrame(temp);
 			//auto finish = std::chrono::high_resolution_clock::now();
 			//std::chrono::duration<double> elapsed = finish - start;
 

@@ -4,9 +4,7 @@
 using namespace cv;
 
 
-//Server::Server(const std::string& ipAddress, const int& port, MessageReceivedCallback callBack) : m_ipAddress(ipAddress), m_port(port), m_messageReceived(callBack) {}
-
-Server::Server(const std::string& ipAddress, const int& port) : m_ipAddress(ipAddress), m_port(port){}
+Server::Server(const std::string& ipAddress, const int& port) : m_ipAddress(ipAddress), m_port(port) {}
 
 Server::~Server()
 {
@@ -45,44 +43,37 @@ void Server::run(cv::VideoCapture& vCap, std::atomic<bool>& stopThreads)
 {
 	// Check for new clients every 50 frames;
 
-	int counter = 0;
-	while (true) {
-	
-		//if ((counter % 50 == 0) | (m_clients.size() == 0)) { // Need to add "select" function if multiple clients are to be added
-		if (m_clients.size() == 0) {
-			// Create a listening socket:
-			SOCKET listener = createSocket();
-			if (listener == INVALID_SOCKET) {
-				break;
-			}
-			SOCKET client = waitForConnection(listener);
-			if (client != INVALID_SOCKET) {
-				closesocket(listener);
-				WSACleanup();
-				if (std::count(m_clients.begin(), m_clients.end(), client))
-					std::cout << "Client already exists" << std::endl;
-				else {
-					m_clients.push_back(client);
-				}
+
+
+	if (m_clients.size() == 0) {
+		// Create a listening socket:
+		SOCKET listener = createSocket();
+		if (listener == INVALID_SOCKET) {
+			return;
+		}
+		SOCKET client = waitForConnection(listener);
+		if (client != INVALID_SOCKET) {
+			closesocket(listener);
+			WSACleanup();
+			if (std::count(m_clients.begin(), m_clients.end(), client))
+				std::cout << "Client already exists" << std::endl;
+			else {
+				m_clients.push_back(client);
 			}
 		}
-		//while (vCap.isOpened()) {
-		if (!m_frame.empty()) {
-			/*size_t frameSize = m_frame.total() * m_frame.elemSize();
-			m_sentFrame = (m_frame.reshape(0, 1));
-			char* sentData = reinterpret_cast<char*>(m_sentFrame.data);*/
+	}
+	while (true) {
+		if (m_newFrameReady) {
 			std::vector<uchar> buf(50000);
-			//cv::imwrite("../../data/img_sample.jpg", m_frame);
 			cv::imencode(".jpg", m_frame, buf);
 			size_t buffer_size = buf.size();
 
 			for (size_t i = 0; i < m_clients.size(); i++) {
-				//send(m_clients[i], reinterpret_cast<char*>(&buffer_size), sizeof(buffer_size), 0);
-				send(m_clients[i], (char *)(&buffer_size), sizeof(buffer_size), 0);
+				send(m_clients[i], (char*)(&buffer_size), sizeof(buffer_size), 0);
 				size_t remain = buffer_size;
 				size_t offset = 0;
 				int len;
-				while ((remain > 0) && ((len = send(m_clients[i], (char *)(buf.data()) + offset, remain, 0)) > 0))
+				while ((remain > 0) && ((len = send(m_clients[i], (char*)(buf.data()) + offset, remain, 0)) > 0))
 				{
 					remain -= len;
 					offset += len;
@@ -90,30 +81,30 @@ void Server::run(cv::VideoCapture& vCap, std::atomic<bool>& stopThreads)
 				if (len <= 0)
 				{
 					// handle fatal error
+					std::cout << "Error sending packet" << std::endl;
 				}
+
+
 				
-				//send(m_clients[i], reinterpret_cast<char*>(buf.data()), buffer_size, 0);
-				closesocket(m_clients[i]);
 				std::cout << "buffer_size sent was: " << buffer_size << std::endl;
-				cv::Mat frame2 = cv::imdecode(cv::Mat(buf), 1);
-				cv::imwrite("../../data/img_sample.jpg", frame2);
+				m_newFrameReady = false;
 			}
 		}
-
+		//m_clients.clear();
+		
 		if (stopThreads) {
 			for (size_t i = 0; i < m_clients.size(); i++) {
 				closesocket(m_clients[i]);
 			}
 			WSACleanup();
-			//closesocket(m_clients[i]);
 			break;
 			return;
 		}
 
 		std::this_thread::sleep_for(std::chrono::milliseconds(10));
-		counter++;
+
 	}
-	
+
 }
 
 void Server::shareFrame(const int& clientSocket, cv::Mat sharedFrame)
@@ -129,52 +120,19 @@ std::thread Server::serverThread(cv::VideoCapture& vCap, std::atomic<bool>& stop
 	return std::thread(&Server::run, this, std::ref(vCap), std::ref(stopThreads));
 }
 
-
 void Server::setFrame(const cv::Mat& frame)
 {
 	m_frame = frame;
 }
 
+void Server::setNewFrameReady(bool&& status)
+{
+	m_newFrameReady = status;
+}
+
 void Server::cleanup()
 {
 	WSACleanup();         // The WSACleanup function terminates use of the Winsock 2 DLL (Ws2_32.dll).
-}
-
-void Server::testFunc(){
-
-	int counter = 0;
-	cv::Mat frame = cv::imread("../../data/img_sample.jpg");
-	SOCKET listener = createSocket();
-	if (listener == INVALID_SOCKET) {
-		return;
-	}
-	SOCKET client = waitForConnection(listener);
-	if (client != INVALID_SOCKET) {
-		closesocket(listener);
-		WSACleanup();
-	}
-	std::vector<uchar> buf(50000);
-	//cv::imwrite("../../data/img_sample.jpg", m_frame);
-	cv::imencode(".jpg", frame, buf);
-	size_t buffer_size = buf.size();
-
-	send(client, (char*)(&buffer_size), sizeof(buffer_size), 0);
-	size_t remain = buffer_size;
-	size_t offset = 0;
-	int len;
-	while ((remain > 0) && ((len = send(client, (char*)(buf.data()) + offset, remain, 0)) > 0))
-	{
-		remain -= len;
-		offset += len;
-	}
-	if (len <= 0)
-	{
-		// handle fatal error
-	}
-
-	//send(m_clients[i], reinterpret_cast<char*>(buf.data()), buffer_size, 0);
-	closesocket(client);
-
 }
 
 SOCKET Server::createSocket()

@@ -24,12 +24,12 @@ class Server {
 
 
 public:  // Prefix "FD" indicates FileDescriptor because all sockets in Unix are file-descriptors
-	   
+
 	//typedef void (*MessageReceivedCallback)(Server serverListener, int& socketID, std::string& msg);
 
 	Server(const std::string& ipAddress, const int& port);// , MessageReceivedCallback callBack);
 
-	~ Server();
+	~Server();
 
 	// return ipAddress:
 	static std::string getIpAddress();
@@ -47,13 +47,10 @@ public:  // Prefix "FD" indicates FileDescriptor because all sockets in Unix are
 
 	void setFrame(const cv::Mat&);
 
-	// Receive Loop
-	//	Send back message
+	void setNewFrameReady(bool&&);
 
 	// Cleanup
 	void cleanup();
-
-	void testFunc();
 
 private:
 
@@ -61,6 +58,7 @@ private:
 	int m_port;
 	cv::Mat m_frame;
 	cv::Mat m_sentFrame;
+	bool m_newFrameReady;
 	//MessageReceivedCallback m_messageReceived;
 	std::vector<SOCKET> m_clients;
 

@@ -530,7 +530,7 @@ void runStackObjectThreads(const string& video_path, const string& cur_dir) {
 		Server server(ipAddress, 54000);
 		thread serverThread;
 		if (server.init()) {
-			serverThread = server.serverThread(std::ref(vCap), std::ref(stop_threading));
+			serverThread = server.serverThread(std::ref(stop_threading));
 		}
 
 		// 8. Initialise threads

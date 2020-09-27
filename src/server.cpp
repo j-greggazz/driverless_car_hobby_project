@@ -39,7 +39,7 @@ bool Server::init()
 	return wsInit == 0;						 // returns true if it worked
 }
 
-void Server::run(cv::VideoCapture& vCap, std::atomic<bool>& stopThreads)
+void Server::run(std::atomic<bool>& stopThreads)
 {
 	// Check for new clients every 50 frames;
 
@@ -115,7 +115,7 @@ void Server::shareFrame(const int& clientSocket, cv::Mat sharedFrame)
 	send(clientSocket, reinterpret_cast<char*>(sharedFrame.data), frameSize, 0);  //https://stackoverflow.com/questions/49165877/incompatibility-between-char-and-unsigned-char
 }
 
-std::thread Server::serverThread(cv::VideoCapture& vCap, std::atomic<bool>& stopThreads) {
+std::thread Server::serverThread(std::atomic<bool>& stopThreads) {
 
 	return std::thread(&Server::run, this, std::ref(vCap), std::ref(stopThreads));
 }

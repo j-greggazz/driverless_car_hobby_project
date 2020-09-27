@@ -38,12 +38,12 @@ public:  // Prefix "FD" indicates FileDescriptor because all sockets in Unix are
 	bool init();
 
 	// The main processing loop
-	void run(cv::VideoCapture&, std::atomic<bool>&);
+	void run(std::atomic<bool>&);
 
 	// Share frame with client
 	void shareFrame(const int& clientSocket, cv::Mat sharedFrame); // copied val of shared frame?
 
-	std::thread serverThread(cv::VideoCapture&, std::atomic<bool>&);
+	std::thread serverThread(std::atomic<bool>&);
 
 	void setFrame(const cv::Mat&);
 

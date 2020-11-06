@@ -22,7 +22,7 @@ if(Boost_FOUND)
 endif()
 
 ### ~~~~~~~~~~~~ General Include/Add ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
+# IMPORTANT - "include_directories" must come before "add_subdirectory" - otherwise include files not found!
 include_directories(include ${OpenCV_INCLUDE_DIR} ${Boost_INCLUDE_DIR})
 
 

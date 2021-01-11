@@ -117,7 +117,7 @@ void Server::shareFrame(const int& clientSocket, cv::Mat sharedFrame)
 
 std::thread Server::serverThread(std::atomic<bool>& stopThreads) {
 
-	return std::thread(&Server::run, this, std::ref(vCap), std::ref(stopThreads));
+	return std::thread(&Server::run, this, std::ref(stopThreads));
 }
 
 void Server::setFrame(const cv::Mat& frame)
